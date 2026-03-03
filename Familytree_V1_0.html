@@ -1,0 +1,3788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Tree Application</title>
+    <!-- External Dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/11.10.1/sweetalert2.all.min.js"></script>
+    <style>
+        /* Reset and Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            overflow: hidden;
+        }
+
+        /* Layout */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .top-bar {
+            background: #2c3e50;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .top-bar h1 {
+            font-size: 1.5rem;
+            font-weight: 300;
+            min-width: 200px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+            outline: none;
+        }
+
+        .top-bar h1:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .top-bar h1:focus {
+            background-color: rgba(255, 255, 255, 0.15);
+            border: 1px solid #3498db;
+        }
+
+        .top-bar-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .search-container input {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 3px;
+            width: 150px;
+            font-size: 14px;
+        }
+
+        .search-container input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .search-container input:focus {
+            outline: none;
+            border-color: #3498db;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .search-container button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s ease;
+        }
+
+        .search-container button:hover {
+            background: #2980b9;
+        }
+
+        .btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            background: #2980b9;
+            transform: translateY(-1px);
+        }
+
+        .btn.success {
+            background: #27ae60;
+        }
+
+        .btn.success:hover {
+            background: #219a52;
+        }
+
+        .btn.warning {
+            background: #f39c12;
+        }
+
+        .btn.warning:hover {
+            background: #e67e22;
+        }
+
+        .main-area {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: #ecf0f1;
+        }
+
+        .tree-container {
+            width: 100%;
+            height: 100%;
+        }
+
+        .tree-svg {
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+        }
+
+        .tree-svg:active {
+            cursor: grabbing;
+        }
+
+        /* Generation header labels */
+        .generation-header-bg {
+            fill: rgba(44, 62, 80, 0.08);
+            rx: 18;
+            ry: 18;
+        }
+        .generation-header-text {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            fill: #2c3e50;
+            text-anchor: middle;
+            dominant-baseline: central;
+            pointer-events: none;
+            user-select: none;
+        }
+        .generation-header-number {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            fill: #2c3e50;
+            text-anchor: middle;
+            dominant-baseline: central;
+            pointer-events: none;
+            user-select: none;
+        }
+        .generation-divider {
+            stroke: rgba(44, 62, 80, 0.08);
+            stroke-width: 1;
+            stroke-dasharray: 6,4;
+            pointer-events: none;
+        }
+
+        /* Validation status badges */
+        .status-badge {
+            pointer-events: none;
+        }
+        .status-badge circle {
+            stroke: white;
+            stroke-width: 1.5;
+        }
+        .status-badge text {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-weight: 700;
+            text-anchor: middle;
+            dominant-baseline: central;
+            pointer-events: none;
+        }
+
+        .bottom-bar {
+            background: #34495e;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .zoom-slider {
+            width: 150px;
+        }
+
+        .zoom-value {
+            min-width: 60px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        /* Tree Nodes */
+        .node {
+            cursor: pointer;
+        }
+
+        .node rect {
+            transition: filter 0.3s ease, fill 0.3s ease, stroke-width 0.3s ease, rx 0.3s ease;
+        }
+
+        .node text {
+            transition: font-size 0.3s ease;
+        }
+
+        .node:hover rect {
+            filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.3));
+            stroke-width: 3px;
+        }
+
+        .node.male rect {
+            fill: url(#maleGradient);
+            stroke: #2980b9;
+            stroke-width: 2px;
+        }
+
+        .node.male:hover rect {
+            fill: url(#maleGradientHover);
+        }
+
+        .node.female rect {
+            fill: url(#femaleGradient);
+            stroke: #e91e63;
+            stroke-width: 2px;
+        }
+
+        .node.female:hover rect {
+            fill: url(#femaleGradientHover);
+        }
+
+        .node.search-highlight rect {
+            stroke: #f39c12;
+            stroke-width: 4px;
+            filter: brightness(1.2);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { stroke-width: 4px; }
+            50% { stroke-width: 6px; }
+            100% { stroke-width: 4px; }
+        }
+
+        .node.search-dimmed {
+            opacity: 0.3;
+        }
+
+        .node.highlighted rect {
+            stroke-width: 4px;
+            filter: brightness(1.2);
+        }
+        
+        .node.selected rect {
+            stroke-width: 3px;
+            stroke: #f39c12;
+            filter: brightness(1.1);
+        }
+
+        .node.dimmed {
+            opacity: 0.4;
+        }
+
+        .node text {
+            fill: #2c3e50;
+            font-size: 12px;
+            font-weight: 500;
+            text-anchor: middle;
+            pointer-events: none;
+        }
+
+        .link {
+            fill: none;
+            stroke: #7f8c8d;
+            stroke-width: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .link.highlighted {
+            stroke: #2c3e50;
+            stroke-width: 3px;
+        }
+
+        .link.dimmed {
+            opacity: 0.3;
+        }
+
+        .marriage-link {
+            stroke: #e74c3c;
+            stroke-width: 2.5px;
+            stroke-dasharray: 6, 3;
+        }
+
+        .marriage-link.highlighted {
+            stroke: #c0392b;
+            stroke-width: 3.5px;
+        }
+
+        .marriage-link.dimmed {
+            opacity: 0.3;
+        }
+
+        /* Info Panel */
+        .info-panel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 280px;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            border-right: 2px solid #bdc3c7;
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+            z-index: 10;
+            overflow-y: auto;
+            padding: 16px;
+            display: none;
+            font-size: 13px;
+        }
+
+        .info-panel.visible {
+            display: block;
+        }
+
+        .info-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3498db;
+        }
+
+        .info-panel-header h2 {
+            font-size: 16px;
+            color: #2c3e50;
+            margin: 0;
+            line-height: 1.3;
+            flex: 1;
+        }
+
+        .info-panel-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #7f8c8d;
+            padding: 0 0 0 8px;
+            line-height: 1;
+        }
+
+        .info-panel-close:hover {
+            color: #e74c3c;
+        }
+
+        .info-field {
+            margin-bottom: 10px;
+        }
+
+        .info-field-label {
+            font-weight: 700;
+            color: #7f8c8d;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+
+        .info-field-value {
+            color: #2c3e50;
+            font-size: 13px;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+
+        .info-gender-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .info-gender-badge.male {
+            background: #2980b9;
+        }
+
+        .info-gender-badge.female {
+            background: #e91e63;
+        }
+
+        .info-section-divider {
+            border: none;
+            border-top: 1px solid #ecf0f1;
+            margin: 12px 0;
+        }
+
+        /* Welcome Screen */
+        .welcome-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            z-index: 5;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .welcome-screen.hidden {
+            display: none;
+        }
+
+        .welcome-icon {
+            font-size: 72px;
+            margin-bottom: 20px;
+            opacity: 0.8;
+        }
+
+        .welcome-screen h2 {
+            font-size: 28px;
+            font-weight: 300;
+            color: #2c3e50;
+            margin-bottom: 12px;
+        }
+
+        .welcome-screen p {
+            font-size: 16px;
+            color: #7f8c8d;
+            max-width: 480px;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        .welcome-actions {
+            display: flex;
+            gap: 16px;
+            margin-top: 30px;
+        }
+
+        .welcome-actions .btn {
+            padding: 12px 28px;
+            font-size: 15px;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        }
+
+        .welcome-actions .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+        }
+
+        .welcome-hint {
+            margin-top: 24px;
+            font-size: 13px;
+            color: #95a5a6;
+            font-style: italic;
+        }
+
+        /* Custom SweetAlert2 Styles */
+        .swal2-popup {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .member-form {
+            text-align: left;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 2px solid #e0e6ed;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .form-group .date-help {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 2px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .form-actions button {
+            flex: 1;
+            min-width: 120px;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-add-parent {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-add-parent:hover {
+            background: #c0392b;
+        }
+
+        .btn-add-child {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-add-child:hover {
+            background: #219a52;
+        }
+
+        .btn-edit {
+            background: #f39c12;
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background: #e67e22;
+        }
+
+        .btn-remove {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-remove:hover {
+            background: #c0392b;
+        }
+
+        /* Loading and Error States */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            font-size: 18px;
+            color: #7f8c8d;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        /* File input (hidden) */
+        #fileInput, #gedcomFileInput {
+            display: none;
+        }
+
+        /* Mode toggle */
+        .mode-toggle {
+            display: flex;
+            background: #34495e;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .mode-toggle button {
+            background: transparent;
+            color: #bdc3c7;
+            border: none;
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .mode-toggle button.active {
+            background: #3498db;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <h1 id="appTitle" contenteditable="true" spellcheck="false">Stamboom</h1>
+            <div class="top-bar-controls">
+                <div class="search-container">
+                    <input type="text" id="searchInput" placeholder="Search last name...">
+                    <button id="searchBtn">Search</button>
+                    <button id="clearSearchBtn" style="display:none;">Clear</button>
+                </div>
+                <div class="mode-toggle">
+                    <button id="viewMode" class="active">View</button>
+                    <button id="editMode">Edit</button>
+                </div>
+                <button id="loadBtn" class="btn">Load XML</button>
+                <button id="saveBtn" class="btn success">Save XML</button>
+                <button id="importGedcomBtn" class="btn">Import GEDCOM</button>
+                <button id="exportGedcomBtn" class="btn warning">Export GEDCOM</button>
+                <input type="file" id="fileInput" accept=".xml" />
+                <input type="file" id="gedcomFileInput" accept=".ged,.gedcom" />
+            </div>
+        </div>
+
+        <!-- Main Area -->
+        <div class="main-area">
+            <!-- Welcome Screen -->
+            <div class="welcome-screen" id="welcomeScreen">
+                <div class="welcome-icon">&#127795;</div>
+                <h2>Welkom bij de Stamboom Applicatie</h2>
+                <p>Laad een bestaande stamboom om te beginnen. Ondersteunde formaten zijn GEDCOM (.ged) en XML (.xml).</p>
+                <div class="welcome-actions">
+                    <button class="btn" id="welcomeLoadXml">&#128194; Laad XML</button>
+                    <button class="btn" id="welcomeImportGedcom">&#128194; Importeer GEDCOM</button>
+                </div>
+                <div class="welcome-hint">U kunt ook de knoppen in de bovenste balk gebruiken.</div>
+            </div>
+            <!-- Info Panel (shown on node click in view mode) -->
+            <div class="info-panel" id="infoPanel">
+                <div class="info-panel-header">
+                    <h2 id="infoPanelName"></h2>
+                    <button class="info-panel-close" id="infoPanelClose">&times;</button>
+                </div>
+                <div id="infoPanelContent"></div>
+            </div>
+            <div class="tree-container">
+                <svg class="tree-svg" id="treeSvg"></svg>
+            </div>
+        </div>
+
+        <!-- Bottom Bar -->
+        <div class="bottom-bar">
+            <div class="zoom-controls">
+                <button id="zoomOut" class="btn">Zoom Out</button>
+                <input type="range" id="zoomSlider" class="zoom-slider" 
+                       min="0.5" max="2" step="0.1" value="1">
+                <div class="zoom-value" id="zoomValue">100%</div>
+                <button id="zoomIn" class="btn">Zoom In</button>
+                <button id="resetZoom" class="btn">Reset View</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let treeData = null;
+        let svg, g, tree, root;
+        let currentMode = 'view';
+        let zoom;
+        let nextId = 1;
+        let hasUnsavedChanges = false;
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+            setupEventListeners();
+            loadDefaultTree();
+        });
+
+        function initializeApp() {
+            // Setup SVG and zoom
+            svg = d3.select('#treeSvg');
+
+            // Define gradient fills for nodes
+            const defs = svg.append('defs');
+
+            // Male gradient — soft blue with subtle depth
+            const maleGrad = defs.append('linearGradient')
+                .attr('id', 'maleGradient')
+                .attr('x1', '0%').attr('y1', '0%')
+                .attr('x2', '0%').attr('y2', '100%');
+            maleGrad.append('stop').attr('offset', '0%').attr('stop-color', '#c4e0ff');
+            maleGrad.append('stop').attr('offset', '50%').attr('stop-color', '#a8d0ff');
+            maleGrad.append('stop').attr('offset', '100%').attr('stop-color', '#8bbcf0');
+
+            // Male hover gradient — brighter
+            const maleHoverGrad = defs.append('linearGradient')
+                .attr('id', 'maleGradientHover')
+                .attr('x1', '0%').attr('y1', '0%')
+                .attr('x2', '0%').attr('y2', '100%');
+            maleHoverGrad.append('stop').attr('offset', '0%').attr('stop-color', '#d6ebff');
+            maleHoverGrad.append('stop').attr('offset', '50%').attr('stop-color', '#b8dcff');
+            maleHoverGrad.append('stop').attr('offset', '100%').attr('stop-color', '#9dcbf7');
+
+            // Female gradient — soft pink with subtle depth
+            const femaleGrad = defs.append('linearGradient')
+                .attr('id', 'femaleGradient')
+                .attr('x1', '0%').attr('y1', '0%')
+                .attr('x2', '0%').attr('y2', '100%');
+            femaleGrad.append('stop').attr('offset', '0%').attr('stop-color', '#ffd4db');
+            femaleGrad.append('stop').attr('offset', '50%').attr('stop-color', '#ffb6c1');
+            femaleGrad.append('stop').attr('offset', '100%').attr('stop-color', '#f29baa');
+
+            // Female hover gradient — brighter
+            const femaleHoverGrad = defs.append('linearGradient')
+                .attr('id', 'femaleGradientHover')
+                .attr('x1', '0%').attr('y1', '0%')
+                .attr('x2', '0%').attr('y2', '100%');
+            femaleHoverGrad.append('stop').attr('offset', '0%').attr('stop-color', '#ffe3e8');
+            femaleHoverGrad.append('stop').attr('offset', '50%').attr('stop-color', '#ffc8d0');
+            femaleHoverGrad.append('stop').attr('offset', '100%').attr('stop-color', '#f7b0bb');
+
+            g = svg.append('g');
+            
+            zoom = d3.zoom()
+                .scaleExtent([0.05, 3])
+                .on('zoom', function(event) {
+                    g.attr('transform', event.transform);
+                    updateZoomDisplay(event.transform.k);
+                });
+                
+            svg.call(zoom);
+            
+            // Setup tree layout
+            tree = d3.tree()
+                .size([600, 800])
+                .separation(function(a, b) {
+                    return (a.parent == b.parent ? 1 : 2) / a.depth;
+                });
+        }
+
+        function setupEventListeners() {
+            // Mode toggle
+            document.getElementById('viewMode').addEventListener('click', () => setMode('view'));
+            document.getElementById('editMode').addEventListener('click', () => setMode('edit'));
+            
+            // Search functionality
+            const searchInput = document.getElementById('searchInput');
+            const searchBtn = document.getElementById('searchBtn');
+            const clearSearchBtn = document.getElementById('clearSearchBtn');
+            
+            searchBtn.addEventListener('click', performSearch);
+            clearSearchBtn.addEventListener('click', clearSearch);
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    performSearch();
+                }
+            });
+            
+            // Editable title
+            const appTitle = document.getElementById('appTitle');
+            appTitle.addEventListener('blur', () => {
+                // Save title when user clicks away
+                if (typeof(Storage) !== "undefined") {
+                    localStorage.setItem('familyTreeTitle', appTitle.textContent);
+                }
+            });
+            appTitle.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    appTitle.blur(); // Save on Enter key
+                }
+            });
+            
+            // Load saved title
+            if (typeof(Storage) !== "undefined") {
+                const savedTitle = localStorage.getItem('familyTreeTitle');
+                if (savedTitle) {
+                    appTitle.textContent = savedTitle;
+                }
+            }
+            
+            // File operations
+            document.getElementById('loadBtn').addEventListener('click', loadFile);
+            document.getElementById('saveBtn').addEventListener('click', saveFile);
+            document.getElementById('importGedcomBtn').addEventListener('click', importGedcom);
+            document.getElementById('exportGedcomBtn').addEventListener('click', exportGedcom);
+            document.getElementById('fileInput').addEventListener('change', handleFileLoad);
+            document.getElementById('gedcomFileInput').addEventListener('change', handleGedcomLoad);
+
+            // Welcome screen buttons
+            document.getElementById('welcomeLoadXml').addEventListener('click', loadFile);
+            document.getElementById('welcomeImportGedcom').addEventListener('click', importGedcom);
+            
+            // Zoom controls
+            document.getElementById('zoomIn').addEventListener('click', () => zoomBy(1.2));
+            document.getElementById('zoomOut').addEventListener('click', () => zoomBy(0.8));
+            document.getElementById('resetZoom').addEventListener('click', resetView);
+            document.getElementById('zoomSlider').addEventListener('input', handleZoomSlider);
+            
+            // Warn before closing with unsaved changes
+            window.addEventListener('beforeunload', function(e) {
+                if (hasUnsavedChanges) {
+                    e.preventDefault();
+                    e.returnValue = '';
+                }
+            });
+
+            // Info panel close button
+            document.getElementById('infoPanelClose').addEventListener('click', hideInfoPanel);
+
+            // Close info panel when clicking on SVG background (not a node)
+            document.getElementById('treeSvg').addEventListener('click', function(event) {
+                if (event.target === this || event.target.tagName === 'svg') {
+                    hideInfoPanel();
+                    // Also clear highlighting
+                    if (root && root.nodeElements) {
+                        root.nodeElements.classed('highlighted dimmed search-highlight search-dimmed', false);
+                    }
+                    if (root && root.linkElements) {
+                        root.linkElements.classed('highlighted dimmed', false);
+                    }
+                    if (root && root.marriageLinkElements) {
+                        root.marriageLinkElements.classed('highlighted dimmed', false);
+                    }
+                }
+            });
+
+            // Keyboard navigation
+            document.addEventListener('keydown', handleKeyboard);
+        }
+
+        // Search functionality
+        function performSearch() {
+            const searchTerm = document.getElementById('searchInput').value.trim().toLowerCase();
+            
+            if (!searchTerm) {
+                clearSearch();
+                return;
+            }
+            
+            if (!root || !root.nodeElements) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'No Tree Loaded',
+                    text: 'Please load a family tree first.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                return;
+            }
+            
+            // Clear previous search highlighting
+            root.nodeElements.classed('search-highlight search-dimmed', false);
+            
+            let matchCount = 0;
+            const matchedNodes = [];
+            
+            // Search and highlight matching nodes
+            root.nodeElements.each(function(d) {
+                const fullName = getFullName(d.data).toLowerCase();
+                if (fullName.includes(searchTerm)) {
+                    d3.select(this).classed('search-highlight', true);
+                    matchCount++;
+                    matchedNodes.push(d);
+                } else {
+                    d3.select(this).classed('search-dimmed', true);
+                }
+            });
+            
+            // Show/hide clear button
+            document.getElementById('clearSearchBtn').style.display = 'inline-block';
+            
+            // Show result message
+            if (matchCount > 0) {
+                // If matches found, zoom to show all matched nodes
+                if (matchedNodes.length > 0) {
+                    const bounds = svg.node().getBoundingClientRect();
+                    const xExtent = d3.extent(matchedNodes, d => d.x);
+                    const yExtent = d3.extent(matchedNodes, d => d.y);
+                    
+                    const padding = 200;
+                    const xRange = xExtent[1] - xExtent[0] + padding;
+                    const yRange = yExtent[1] - yExtent[0] + padding;
+                    
+                    const scale = Math.min(
+                        bounds.width / xRange,
+                        bounds.height / yRange,
+                        1.5
+                    ) * 0.8;
+                    
+                    const centerX = (xExtent[0] + xExtent[1]) / 2;
+                    const centerY = (yExtent[0] + yExtent[1]) / 2;
+                    
+                    const transform = d3.zoomIdentity
+                        .translate(bounds.width / 2, bounds.height / 2)
+                        .scale(scale)
+                        .translate(-centerX, -centerY);
+                    
+                    svg.transition().duration(750).call(zoom.transform, transform);
+                }
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Search Results',
+                    text: `Found ${matchCount} person(s) with last name containing "${searchTerm}"`,
+                    timer: 2000,
+                    showConfirmButton: false,
+                    position: 'top-end',
+                    toast: true
+                });
+            } else {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'No Results',
+                    text: `No one found with last name containing "${searchTerm}"`,
+                    timer: 2000,
+                    showConfirmButton: false,
+                    position: 'top-end',
+                    toast: true
+                });
+            }
+        }
+
+        function clearSearch() {
+            // Clear search input
+            document.getElementById('searchInput').value = '';
+            
+            // Remove all search highlighting
+            if (root && root.nodeElements) {
+                root.nodeElements.classed('search-highlight search-dimmed', false);
+            }
+            
+            // Hide clear button
+            document.getElementById('clearSearchBtn').style.display = 'none';
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.getElementById('viewMode').classList.toggle('active', mode === 'view');
+            document.getElementById('editMode').classList.toggle('active', mode === 'edit');
+
+            // Hide info panel when switching modes
+            hideInfoPanel();
+
+            // Clear all highlighting when switching modes
+            if (root && root.nodeElements && root.linkElements) {
+                root.nodeElements.classed('highlighted dimmed selected search-highlight search-dimmed', false);
+                root.linkElements.classed('highlighted dimmed', false);
+                if (root.marriageLinkElements) {
+                    root.marriageLinkElements.classed('highlighted dimmed', false);
+                }
+            }
+            
+            // Clear search when switching modes
+            document.getElementById('searchInput').value = '';
+            document.getElementById('clearSearchBtn').style.display = 'none';
+        }
+
+        function loadDefaultTree() {
+            // Show welcome screen instead of loading dummy data
+            showWelcomeScreen();
+        }
+
+        function showWelcomeScreen() {
+            document.getElementById('welcomeScreen').classList.remove('hidden');
+        }
+
+        function hideWelcomeScreen() {
+            document.getElementById('welcomeScreen').classList.add('hidden');
+        }
+
+        function parseXMLData(xmlString) {
+            try {
+                hasUnsavedChanges = false;
+                hideWelcomeScreen();
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
+                
+                if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
+                    throw new Error('Invalid XML format');
+                }
+                
+                const members = Array.from(xmlDoc.getElementsByTagName('member'));
+                treeData = members.map(member => {
+                    // Convert any legacy date formats to dd/mm/yyyy format
+                    function convertToStandardFormat(dateStr) {
+                        if (!dateStr) return '';
+                        dateStr = dateStr.trim();
+                        
+                        // If it's already in dd/mm/yyyy format or incomplete format, keep as is
+                        if (/^\d{4}$/.test(dateStr) || // yyyy
+                            /^\d{1,2}\/\d{4}$/.test(dateStr) || // mm/yyyy  
+                            /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) { // dd/mm/yyyy
+                            return dateStr;
+                        }
+                        
+                        // Convert from dd-mm-yyyy to dd/mm/yyyy
+                        if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(dateStr)) {
+                            return dateStr.replace(/-/g, '/');
+                        }
+                        
+                        // Convert from yyyy-mm-dd to dd/mm/yyyy
+                        if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(dateStr)) {
+                            const [year, month, day] = dateStr.split('-');
+                            return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
+                        }
+                        
+                        // Convert from mm-yyyy to mm/yyyy
+                        if (/^\d{1,2}-\d{4}$/.test(dateStr)) {
+                            return dateStr.replace('-', '/');
+                        }
+                        
+                        // Return as is if format is unknown
+                        return dateStr;
+                    }
+                    
+                    const data = {
+                        id: parseInt(member.getAttribute('id')),
+                        firstName: member.getAttribute('firstName') || '?',
+                        namePrefix: member.getAttribute('namePrefix') || '',
+                        lastName: member.getAttribute('lastName') || '?',
+                        gender: member.getAttribute('gender') || 'Male',
+                        birthDate: convertToStandardFormat(member.getAttribute('birthDate') || ''),
+                        birthDateCirca: member.getAttribute('birthDateCirca') === 'true',
+                        birthLocation: member.getAttribute('birthLocation') || '',
+                        deathDate: convertToStandardFormat(member.getAttribute('deathDate') || ''),
+                        deathDateCirca: member.getAttribute('deathDateCirca') === 'true',
+                        deathLocation: member.getAttribute('deathLocation') || '',
+                        baptismDate: convertToStandardFormat(member.getAttribute('baptismDate') || ''),
+                        religion: member.getAttribute('religion') || '',
+                        interestingActivity: member.getAttribute('interestingActivity') || '',
+                        notes: member.getAttribute('notes') || '',
+                        sources: member.getAttribute('sources') || '',
+                        validationStatus: member.getAttribute('validationStatus') || '',
+                        fatherId: member.getAttribute('fatherId') ? parseInt(member.getAttribute('fatherId')) : null,
+                        motherId: member.getAttribute('motherId') ? parseInt(member.getAttribute('motherId')) : null,
+                        childIds: member.getAttribute('childIds') ? 
+                                 member.getAttribute('childIds').split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id)) : []
+                    };
+                    return data;
+                });
+                
+                // Update nextId
+                nextId = treeData.length > 0 ? Math.max(...treeData.map(m => m.id)) + 1 : 1;
+                
+                console.log('XML loaded with', treeData.length, 'members');
+                
+                buildTree();
+                
+                // Force render with delay to ensure spacing is applied
+                setTimeout(() => {
+                    renderTree();
+                    console.log('Tree rendered after XML load');
+                }, 100);
+                
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error Loading Data',
+                    text: 'Failed to parse XML data: ' + error.message
+                });
+            }
+        }
+
+        function buildTree() {
+            // This will hold all positioned nodes
+            const allPositionedNodes = [];
+            const globalVisited = new Set(); // Track all visited members globally
+            let groupIndex = 0;
+            
+            // Function to find all members connected to a given member (simplified)
+            function findConnectedFamily(startMemberId) {
+                const connected = new Set();
+                const toProcess = [startMemberId];
+                
+                while (toProcess.length > 0) {
+                    const memberId = toProcess.pop();
+                    if (connected.has(memberId) || globalVisited.has(memberId)) continue;
+                    
+                    connected.add(memberId);
+                    const member = treeData.find(m => m.id === memberId);
+                    if (!member) continue;
+                    
+                    // Add all related members to process
+                    if (member.fatherId && !connected.has(member.fatherId) && !globalVisited.has(member.fatherId)) {
+                        toProcess.push(member.fatherId);
+                    }
+                    if (member.motherId && !connected.has(member.motherId) && !globalVisited.has(member.motherId)) {
+                        toProcess.push(member.motherId);
+                    }
+                    member.childIds.forEach(childId => {
+                        if (!connected.has(childId) && !globalVisited.has(childId)) {
+                            toProcess.push(childId);
+                        }
+                    });
+                }
+                
+                return connected;
+            }
+            
+            // Function to find the best root for a family group
+            function findBestRoot(familyMemberIds) {
+                // Try to find someone with no parents first
+                for (const memberId of familyMemberIds) {
+                    const member = treeData.find(m => m.id === memberId);
+                    if (member && !member.fatherId && !member.motherId) {
+                        return member;
+                    }
+                }
+                
+                // Otherwise, find the person with the most ancestors
+                let bestRoot = null;
+                let maxAncestorDepth = -1;
+                
+                for (const memberId of familyMemberIds) {
+                    const member = treeData.find(m => m.id === memberId);
+                    if (member) {
+                        const depth = getAncestorDepth(member);
+                        if (depth > maxAncestorDepth) {
+                            maxAncestorDepth = depth;
+                            bestRoot = member;
+                        }
+                    }
+                }
+                
+                return bestRoot || treeData.find(m => m.id === familyMemberIds.values().next().value);
+            }
+            
+            // Helper to calculate ancestor depth
+            function getAncestorDepth(member, depth = 0, visited = new Set()) {
+                if (!member || visited.has(member.id)) return depth;
+                visited.add(member.id);
+                
+                let maxDepth = depth;
+                if (member.fatherId) {
+                    const father = treeData.find(m => m.id === member.fatherId);
+                    if (father) {
+                        maxDepth = Math.max(maxDepth, getAncestorDepth(father, depth + 1, visited));
+                    }
+                }
+                if (member.motherId) {
+                    const mother = treeData.find(m => m.id === member.motherId);
+                    if (mother) {
+                        maxDepth = Math.max(maxDepth, getAncestorDepth(mother, depth + 1, visited));
+                    }
+                }
+                return maxDepth;
+            }
+            
+            // Simplified function to position nodes for a family group
+            function buildFamilyGroup(rootMember, familyMemberIds, groupIndex) {
+                const positionedNodes = [];
+                const localVisited = new Set();
+                const queue = [{memberId: rootMember.id, generation: 0}];
+                
+                // Use BFS to assign generations
+                while (queue.length > 0) {
+                    const {memberId, generation} = queue.shift();
+                    
+                    if (localVisited.has(memberId) || !familyMemberIds.has(memberId)) continue;
+                    localVisited.add(memberId);
+                    
+                    const member = treeData.find(m => m.id === memberId);
+                    if (!member) continue;
+                    
+                    // Add this node with proper generation value
+                    positionedNodes.push({
+                        data: member,
+                        generation: generation,
+                        groupIndex: groupIndex
+                    });
+                    
+                    // Queue parents (previous generation)
+                    if (member.fatherId && familyMemberIds.has(member.fatherId) && !localVisited.has(member.fatherId)) {
+                        queue.push({memberId: member.fatherId, generation: generation - 1});
+                    }
+                    if (member.motherId && familyMemberIds.has(member.motherId) && !localVisited.has(member.motherId)) {
+                        queue.push({memberId: member.motherId, generation: generation - 1});
+                    }
+                    
+                    // Queue children (next generation)
+                    member.childIds.forEach(childId => {
+                        if (familyMemberIds.has(childId) && !localVisited.has(childId)) {
+                            queue.push({memberId: childId, generation: generation + 1});
+                        }
+                    });
+                }
+                
+                return positionedNodes;
+            }
+            
+            // Process all members, finding disconnected family groups
+            console.log('Building tree structure for', treeData.length, 'members');
+            
+            treeData.forEach(member => {
+                if (!globalVisited.has(member.id)) {
+                    // Find all members connected to this one
+                    const connectedFamilyIds = findConnectedFamily(member.id);
+                    
+                    console.log(`Found family group ${groupIndex + 1} with ${connectedFamilyIds.size} members`);
+                    
+                    // Mark all as visited globally
+                    connectedFamilyIds.forEach(id => globalVisited.add(id));
+                    
+                    // Find the best root for this family group
+                    const rootMember = findBestRoot(connectedFamilyIds);
+                    
+                    if (rootMember) {
+                        // Build the family group structure
+                        const groupNodes = buildFamilyGroup(rootMember, connectedFamilyIds, groupIndex);
+                        allPositionedNodes.push(...groupNodes);
+                        groupIndex++;
+                    }
+                }
+            });
+            
+            // Store all nodes with group information
+            root = { 
+                nodes: allPositionedNodes,
+                groupCount: groupIndex
+            };
+            
+            // Log generation distribution for debugging
+            const genCounts = {};
+            allPositionedNodes.forEach(node => {
+                const gen = node.generation;
+                genCounts[gen] = (genCounts[gen] || 0) + 1;
+            });
+            console.log('Generation distribution:', genCounts);
+            console.log(`Tree built: ${groupIndex} family group(s), ${allPositionedNodes.length} total nodes`);
+        }
+
+        function renderTree(preserveView) {
+            if (!root || !root.nodes) return;
+
+            // Save current transform before clearing
+            const savedTransform = preserveView ? d3.zoomTransform(svg.node()) : null;
+            
+            // Clear existing elements
+            g.selectAll('*').remove();
+            
+            // Get dimensions
+            const bounds = svg.node().getBoundingClientRect();
+            const width = bounds.width;
+            const height = bounds.height;
+            
+            // Constants for spacing
+            const nodeWidth = 208;
+            const nodeHeight = 60;
+            const horizontalSpacing = 700; // Between generations
+            const verticalSpacing = 80; // Between siblings
+            const groupSpacing = 200; // Between family groups
+            
+            // Group nodes by family group and generation
+            const familyGroups = d3.group(root.nodes, d => d.groupIndex);
+            
+            // Position all nodes
+            const nodes = [];
+            const spousePairsList = []; // Track spouse pairs for marriage links
+            let currentGroupY = 100; // Start position for first group
+            
+            familyGroups.forEach((groupNodes, groupIndex) => {
+                // Group by generation within this family group
+                const generationMap = d3.group(groupNodes, d => d.generation);
+                const generations = Array.from(generationMap.keys()).sort((a, b) => a - b);
+
+                const spouseSpacing = 70; // Tight spacing between spouses
+                const minGap = 20; // Minimum gap between node edges
+
+                // Track positioned nodes by ID for parent-aligned positioning
+                const positionedById = new Map();
+
+                // Helper: find spouse pairs within a set of generation nodes
+                function findGenSpousePairs(genNodes) {
+                    const ids = new Set(genNodes.map(n => n.data.id));
+                    const pairs = [];
+                    const seen = new Set();
+                    treeData.forEach(child => {
+                        if (child.fatherId && child.motherId &&
+                            ids.has(child.fatherId) && ids.has(child.motherId)) {
+                            const key = Math.min(child.fatherId, child.motherId) + '_' + Math.max(child.fatherId, child.motherId);
+                            if (!seen.has(key)) {
+                                seen.add(key);
+                                pairs.push([child.fatherId, child.motherId]);
+                            }
+                        }
+                    });
+                    return pairs;
+                }
+
+                // Helper: get ideal Y for a node based on already-positioned relatives
+                function getIdealY(member, direction) {
+                    const ys = [];
+                    if (direction === 'fromParents') {
+                        if (member.fatherId && positionedById.has(member.fatherId))
+                            ys.push(positionedById.get(member.fatherId).y);
+                        if (member.motherId && positionedById.has(member.motherId))
+                            ys.push(positionedById.get(member.motherId).y);
+                    } else if (direction === 'fromChildren') {
+                        member.childIds.forEach(cid => {
+                            if (positionedById.has(cid)) ys.push(positionedById.get(cid).y);
+                        });
+                    }
+                    return ys.length > 0 ? ys.reduce((a, b) => a + b, 0) / ys.length : null;
+                }
+
+                // Position a single generation's nodes, aligned to already-positioned relatives
+                function positionGeneration(gen, direction, baseY) {
+                    const genNodes = generationMap.get(gen);
+                    if (!genNodes || genNodes.length === 0) return;
+
+                    const genX = (width / 2) + (gen * horizontalSpacing);
+
+                    // Find spouse pairs in this generation
+                    const spPairs = findGenSpousePairs(genNodes);
+
+                    // Build placement units (spouse pair or single node)
+                    const placed = new Set();
+                    const units = [];
+
+                    // Spouse pair units
+                    spPairs.forEach(([id1, id2]) => {
+                        const n1 = genNodes.find(n => n.data.id === id1);
+                        const n2 = genNodes.find(n => n.data.id === id2);
+                        if (n1 && n2 && !placed.has(id1) && !placed.has(id2)) {
+                            const ys = [];
+                            [n1, n2].forEach(nd => {
+                                const iy = getIdealY(nd.data, direction);
+                                if (iy !== null) ys.push(iy);
+                            });
+                            const idealY = ys.length > 0 ? ys.reduce((a, b) => a + b, 0) / ys.length : null;
+                            units.push({ nodeList: [n1, n2], idealY, isSpousePair: true });
+                            placed.add(id1);
+                            placed.add(id2);
+                            spousePairsList.push([id1, id2]);
+                        }
+                    });
+
+                    // Single node units
+                    genNodes.forEach(n => {
+                        if (!placed.has(n.data.id)) {
+                            const idealY = getIdealY(n.data, direction);
+                            units.push({ nodeList: [n], idealY, isSpousePair: false });
+                        }
+                    });
+
+                    // Sort units by idealY (nodes without ideal go to the end)
+                    units.sort((a, b) => {
+                        if (a.idealY === null && b.idealY === null) return 0;
+                        if (a.idealY === null) return 1;
+                        if (b.idealY === null) return -1;
+                        return a.idealY - b.idealY;
+                    });
+
+                    // Greedy placement: place each unit as close to its idealY as possible
+                    // while maintaining minimum spacing from the previous unit
+                    let lastBottom = -Infinity;
+
+                    units.forEach(unit => {
+                        const topPad = unit.isSpousePair ? spouseSpacing / 2 : 0;
+
+                        // Determine desired center Y
+                        let centerY;
+                        if (unit.idealY !== null) {
+                            centerY = unit.idealY;
+                        } else {
+                            centerY = (lastBottom === -Infinity ? baseY : lastBottom) + minGap + nodeHeight / 2 + topPad;
+                        }
+
+                        // Ensure minimum gap from the previous unit's bottom edge
+                        const topEdge = centerY - topPad - nodeHeight / 2;
+                        if (topEdge < lastBottom + minGap) {
+                            centerY = lastBottom + minGap + nodeHeight / 2 + topPad;
+                        }
+
+                        // Place the nodes in this unit
+                        if (unit.isSpousePair) {
+                            const y1 = centerY - spouseSpacing / 2;
+                            const y2 = centerY + spouseSpacing / 2;
+                            const nd1 = { ...unit.nodeList[0], x: genX, y: y1, element: null };
+                            const nd2 = { ...unit.nodeList[1], x: genX, y: y2, element: null };
+                            nodes.push(nd1);
+                            nodes.push(nd2);
+                            positionedById.set(unit.nodeList[0].data.id, nd1);
+                            positionedById.set(unit.nodeList[1].data.id, nd2);
+                            lastBottom = y2 + nodeHeight / 2;
+                        } else {
+                            const nd = { ...unit.nodeList[0], x: genX, y: centerY, element: null };
+                            nodes.push(nd);
+                            positionedById.set(unit.nodeList[0].data.id, nd);
+                            lastBottom = centerY + nodeHeight / 2;
+                        }
+                    });
+                }
+
+                // Find the anchor generation (closest to generation 0)
+                let anchorIdx = 0;
+                for (let i = 0; i < generations.length; i++) {
+                    if (Math.abs(generations[i]) < Math.abs(generations[anchorIdx])) anchorIdx = i;
+                }
+
+                // Phase 1: Position anchor generation (evenly spaced, no ideal Y available)
+                positionGeneration(generations[anchorIdx], 'none', currentGroupY);
+
+                // Phase 2: Position child generations outward (each aligned to parents)
+                for (let i = anchorIdx + 1; i < generations.length; i++) {
+                    positionGeneration(generations[i], 'fromParents', currentGroupY);
+                }
+
+                // Phase 3: Position ancestor generations outward (each aligned to children)
+                for (let i = anchorIdx - 1; i >= 0; i--) {
+                    positionGeneration(generations[i], 'fromChildren', currentGroupY);
+                }
+
+                // Calculate actual extent of this group for proper group offsetting
+                const groupNodeYs = nodes
+                    .filter(n => groupNodes.some(gn => gn.data.id === n.data.id))
+                    .map(n => n.y);
+
+                // Add group label if there are multiple groups
+                if (root.groupCount > 1) {
+                    const labelY = groupNodeYs.length > 0 ? Math.min(...groupNodeYs) - 30 : currentGroupY - 20;
+                    g.append('text')
+                        .attr('class', 'group-label')
+                        .attr('x', 20)
+                        .attr('y', labelY)
+                        .text(`Family Group ${groupIndex + 1}`)
+                        .style('font-size', '14px')
+                        .style('font-weight', 'bold')
+                        .style('fill', '#7f8c8d');
+                }
+
+                // Move to next group position (below all nodes of this group)
+                if (groupNodeYs.length > 0) {
+                    currentGroupY = Math.max(...groupNodeYs) + nodeHeight / 2 + groupSpacing;
+                } else {
+                    currentGroupY += groupSpacing;
+                }
+            });
+            
+            // Create links based on family relationships
+            const links = [];
+            nodes.forEach(targetNode => {
+                const member = targetNode.data;
+                
+                // Link from father
+                if (member.fatherId) {
+                    const father = nodes.find(n => n.data.id === member.fatherId);
+                    if (father) {
+                        links.push({ 
+                            source: father, 
+                            target: targetNode, 
+                            type: 'parent'
+                        });
+                    }
+                }
+                
+                // Link from mother
+                if (member.motherId) {
+                    const mother = nodes.find(n => n.data.id === member.motherId);
+                    if (mother) {
+                        links.push({ 
+                            source: mother, 
+                            target: targetNode, 
+                            type: 'parent'
+                        });
+                    }
+                }
+            });
+            
+            // Draw links
+            const linkElements = g.selectAll('.link')
+                .data(links)
+                .enter()
+                .append('path')
+                .attr('class', 'link')
+                .attr('d', d => {
+                    // Simple straight lines for now, can be enhanced to curves
+                    const sourceX = d.source.x + nodeWidth/2;
+                    const sourceY = d.source.y;
+                    const targetX = d.target.x - nodeWidth/2;
+                    const targetY = d.target.y;
+                    
+                    // Create a path with a curve
+                    const midX = (sourceX + targetX) / 2;
+                    
+                    return `M ${sourceX},${sourceY} 
+                            C ${midX},${sourceY} ${midX},${targetY} ${targetX},${targetY}`;
+                });
+            
+            // Draw marriage links between spouses
+            const marriageLinksData = [];
+            spousePairsList.forEach(([id1, id2]) => {
+                const node1 = nodes.find(n => n.data.id === id1);
+                const node2 = nodes.find(n => n.data.id === id2);
+                if (node1 && node2) {
+                    marriageLinksData.push({ source: node1, target: node2 });
+                }
+            });
+
+            const marriageLinkElements = g.selectAll('.marriage-link')
+                .data(marriageLinksData)
+                .enter()
+                .append('line')
+                .attr('class', 'marriage-link')
+                .attr('x1', d => d.source.x)
+                .attr('y1', d => d.source.y + nodeHeight / 2)
+                .attr('x2', d => d.target.x)
+                .attr('y2', d => d.target.y - nodeHeight / 2);
+
+            // Draw nodes
+            const nodeElements = g.selectAll('.node')
+                .data(nodes)
+                .enter()
+                .append('g')
+                .attr('class', d => `node ${d.data.gender.toLowerCase()}`)
+                .attr('transform', d => `translate(${d.x},${d.y})`)
+                .on('click', (event, d) => handleNodeClick(event, d))
+                .on('mouseenter', function(event, d) {
+                    d3.select(this)
+                        .transition().duration(200)
+                        .attr('transform', `translate(${d.x},${d.y}) scale(1.07)`);
+                })
+                .on('mouseleave', function(event, d) {
+                    d3.select(this)
+                        .transition().duration(200)
+                        .attr('transform', `translate(${d.x},${d.y}) scale(1)`);
+                });
+
+            // Add rectangles
+            nodeElements.append('rect')
+                .attr('x', -nodeWidth/2)
+                .attr('y', -nodeHeight/2)
+                .attr('width', nodeWidth)
+                .attr('height', nodeHeight)
+                .attr('rx', 5);
+            
+            // Add text content to nodes
+            nodeElements.each(function(d) {
+                const node = d3.select(this);
+                const member = d.data;
+                
+                // Helper function for text truncation
+                function truncateText(text, maxLength) {
+                    if (!text) return '';
+                    if (text.length <= maxLength) return text;
+                    return text.substring(0, maxLength - 3) + '...';
+                }
+                
+                // Format date to show only year
+                function getYear(dateStr) {
+                    if (!dateStr) return '';
+                    const match = dateStr.match(/\d{4}/);
+                    return match ? match[0] : '';
+                }
+                
+                // Determine how many lines of content we have
+                const hasYears = !!(getYear(member.birthDate) || getYear(member.deathDate));
+                const hasActivity = !!member.interestingActivity;
+                const lineCount = 1 + (hasYears ? 1 : 0) + (hasActivity ? 1 : 0);
+
+                // Calculate vertical start so content is centered in the node
+                const lineHeight = 14;
+                const startY = -(lineCount - 1) * lineHeight / 2;
+                let currentTextY = startY;
+
+                // Name
+                const fullName = getFullName(member);
+                node.append('text')
+                    .attr('y', currentTextY)
+                    .attr('text-anchor', 'middle')
+                    .text(truncateText(fullName, 28))
+                    .style('font-size', '12px')
+                    .style('font-weight', 'bold');
+                currentTextY += lineHeight;
+
+                // Birth and death years
+                if (hasYears) {
+                    const birthYear = getYear(member.birthDate);
+                    const deathYear = getYear(member.deathDate);
+                    const bPrefix = member.birthDateCirca && birthYear ? 'ca.' : '';
+                    const dPrefix = member.deathDateCirca && deathYear ? 'ca.' : '';
+                    const yearText = birthYear && deathYear ? `${bPrefix}${birthYear}-${dPrefix}${deathYear}` :
+                                     birthYear ? `${bPrefix}${birthYear}-` :
+                                     `-${dPrefix}${deathYear}`;
+                    node.append('text')
+                        .attr('y', currentTextY)
+                        .attr('text-anchor', 'middle')
+                        .text(yearText)
+                        .style('font-size', '10px');
+                    currentTextY += lineHeight;
+                }
+
+                // Activity/occupation
+                if (hasActivity) {
+                    node.append('text')
+                        .attr('y', currentTextY)
+                        .attr('text-anchor', 'middle')
+                        .text(truncateText(member.interestingActivity, 30))
+                        .style('font-size', '9px')
+                        .style('font-style', 'italic');
+                }
+
+                // Validation status badge (top-right corner)
+                if (member.validationStatus) {
+                    const badgeX = nodeWidth / 2 - 12;
+                    const badgeY = -nodeHeight / 2 + 12;
+                    const badge = node.append('g')
+                        .attr('class', 'status-badge')
+                        .attr('transform', `translate(${badgeX}, ${badgeY})`);
+
+                    if (member.validationStatus === 'verified') {
+                        // Green circle with white checkmark
+                        badge.append('circle').attr('r', 8).attr('fill', '#27ae60');
+                        badge.append('path')
+                            .attr('d', 'M-3.5,0.5 L-1,3 L3.5,-2.5')
+                            .attr('fill', 'none').attr('stroke', 'white')
+                            .attr('stroke-width', 2).attr('stroke-linecap', 'round').attr('stroke-linejoin', 'round');
+                    } else if (member.validationStatus === 'unverified') {
+                        // Red circle with white question mark
+                        badge.append('circle').attr('r', 8).attr('fill', '#e74c3c');
+                        badge.append('text').attr('y', 0.5)
+                            .text('?').attr('fill', 'white').style('font-size', '11px');
+                    } else if (member.validationStatus === 'research') {
+                        // Yellow circle with dark exclamation mark
+                        badge.append('circle').attr('r', 8).attr('fill', '#f39c12');
+                        badge.append('text').attr('y', 0.5)
+                            .text('!').attr('fill', '#333').style('font-size', '11px');
+                    } else if (member.validationStatus === 'endOfLine') {
+                        // Blue outer circle with small green circle + white checkmark
+                        badge.append('circle').attr('r', 10).attr('fill', '#3498db');
+                        badge.append('circle').attr('r', 6).attr('fill', '#27ae60').attr('stroke', 'none');
+                        badge.append('path')
+                            .attr('d', 'M-2.5,0.5 L-0.5,2.5 L2.5,-1.5')
+                            .attr('fill', 'none').attr('stroke', 'white')
+                            .attr('stroke-width', 1.5).attr('stroke-linecap', 'round').attr('stroke-linejoin', 'round');
+                    }
+                }
+            });
+
+            // Store references for highlighting
+            nodeElements.each(function(d) {
+                d.element = this;
+            });
+            linkElements.each(function(d) {
+                d.element = this;
+            });
+            
+            // Store references globally
+            root.nodeElements = nodeElements;
+            root.linkElements = linkElements;
+            root.marriageLinkElements = marriageLinkElements;
+
+            // Draw generation headers above the tree
+            if (nodes.length > 0) {
+                // Collect unique generation values and their X positions
+                const genXMap = new Map();
+                nodes.forEach(n => {
+                    if (!genXMap.has(n.generation)) {
+                        genXMap.set(n.generation, n.x);
+                    }
+                });
+
+                // Find the maximum generation number (youngest, rightmost)
+                const allGens = Array.from(genXMap.keys()).sort((a, b) => a - b);
+                const maxGen = allGens[allGens.length - 1];
+
+                // Y position for headers: above all nodes
+                const yMin = d3.min(nodes, d => d.y);
+                const headerY = yMin - 70;
+
+                // Y extent for vertical divider lines
+                const yMax = d3.max(nodes, d => d.y);
+
+                // Draw a generation header group
+                const genHeaderGroup = g.append('g').attr('class', 'generation-headers');
+
+                allGens.forEach(gen => {
+                    const genX = genXMap.get(gen);
+                    // Display number: youngest (max) = 0, older = higher number
+                    const displayNum = maxGen - gen;
+                    const label = `Generatie ${displayNum}`;
+
+                    const hg = genHeaderGroup.append('g')
+                        .attr('transform', `translate(${genX}, ${headerY})`);
+
+                    // Background pill
+                    hg.append('rect')
+                        .attr('class', 'generation-header-bg')
+                        .attr('x', -60)
+                        .attr('y', -32)
+                        .attr('width', 120)
+                        .attr('height', 46);
+
+                    // Generation number (large)
+                    hg.append('text')
+                        .attr('class', 'generation-header-number')
+                        .attr('y', -15)
+                        .text(displayNum);
+
+                    // Label text
+                    hg.append('text')
+                        .attr('class', 'generation-header-text')
+                        .attr('y', 6)
+                        .text('Generatie');
+
+                    // Subtle vertical divider line between generations
+                    if (gen < maxGen) {
+                        const nextGen = allGens[allGens.indexOf(gen) + 1];
+                        if (nextGen !== undefined) {
+                            const nextX = genXMap.get(nextGen);
+                            const midX = (genX + nextX) / 2;
+                            g.append('line')
+                                .attr('class', 'generation-divider')
+                                .attr('x1', midX)
+                                .attr('y1', headerY - 40)
+                                .attr('x2', midX)
+                                .attr('y2', yMax + nodeHeight / 2 + 30);
+                        }
+                    }
+                });
+            }
+
+            // Restore saved view or auto-fit
+            if (savedTransform) {
+                // Restore the previous zoom/pan position
+                svg.call(zoom.transform, savedTransform);
+            } else if (nodes.length > 0) {
+                // Auto-fit view to show all nodes (include generation headers in bounding box)
+                const xExtent = d3.extent(nodes, d => d.x);
+                const yExtent = d3.extent(nodes, d => d.y);
+                // Expand top to include generation header area (headerY is yMin - 70, pill top is -32 above that)
+                const yMinWithHeaders = yExtent[0] - 70 - 40;
+
+                const xRange = xExtent[1] - xExtent[0] + 200;
+                const yRange = yExtent[1] - yMinWithHeaders + 200;
+
+                const scale = Math.min(
+                    width / xRange,
+                    height / yRange,
+                    1 // Don't zoom in more than 100%
+                ) * 0.9; // 90% to leave some margin
+
+                const centerX = (xExtent[0] + xExtent[1]) / 2;
+                const centerY = (yMinWithHeaders + yExtent[1]) / 2;
+
+                const transform = d3.zoomIdentity
+                    .translate(width / 2, height / 2)
+                    .scale(scale)
+                    .translate(-centerX, -centerY);
+
+                svg.call(zoom.transform, transform);
+            }
+            
+            console.log(`Rendered ${nodes.length} nodes in ${root.groupCount} group(s)`);
+        }
+
+        function updateInfoPanel(node) {
+            const member = node.data;
+            const panel = document.getElementById('infoPanel');
+            const nameEl = document.getElementById('infoPanelName');
+            const contentEl = document.getElementById('infoPanelContent');
+
+            // Set name in header
+            nameEl.textContent = getFullName(member);
+
+            // Build content HTML - only show fields that have data
+            let html = '';
+
+            // Gender badge
+            const genderClass = member.gender === 'Female' ? 'female' : 'male';
+            const genderLabel = member.gender === 'Female' ? 'Vrouw' : 'Man';
+            html += `<div class="info-field">
+                <span class="info-gender-badge ${genderClass}">${genderLabel}</span>
+            </div>`;
+
+            // Birth
+            if (member.birthDate || member.birthLocation) {
+                html += '<hr class="info-section-divider">';
+                if (member.birthDate) {
+                    const circaLabel = member.birthDateCirca ? 'ca. ' : '';
+                    html += `<div class="info-field">
+                        <div class="info-field-label">Geboortedatum</div>
+                        <div class="info-field-value">${circaLabel}${member.birthDate}</div>
+                    </div>`;
+                }
+                if (member.birthLocation) {
+                    html += `<div class="info-field">
+                        <div class="info-field-label">Geboorteplaats</div>
+                        <div class="info-field-value">${member.birthLocation}</div>
+                    </div>`;
+                }
+            }
+
+            // Death
+            if (member.deathDate || member.deathLocation) {
+                html += '<hr class="info-section-divider">';
+                if (member.deathDate) {
+                    const circaLabel = member.deathDateCirca ? 'ca. ' : '';
+                    html += `<div class="info-field">
+                        <div class="info-field-label">Overlijdensdatum</div>
+                        <div class="info-field-value">${circaLabel}${member.deathDate}</div>
+                    </div>`;
+                }
+                if (member.deathLocation) {
+                    html += `<div class="info-field">
+                        <div class="info-field-label">Overlijdensplaats</div>
+                        <div class="info-field-value">${member.deathLocation}</div>
+                    </div>`;
+                }
+            }
+
+            // Baptism
+            if (member.baptismDate) {
+                html += '<hr class="info-section-divider">';
+                html += `<div class="info-field">
+                    <div class="info-field-label">Doopdatum</div>
+                    <div class="info-field-value">${member.baptismDate}</div>
+                </div>`;
+            }
+
+            // Religion
+            if (member.religion) {
+                html += `<div class="info-field">
+                    <div class="info-field-label">Religie</div>
+                    <div class="info-field-value">${member.religion}</div>
+                </div>`;
+            }
+
+            // Activity / Occupation
+            if (member.interestingActivity) {
+                html += '<hr class="info-section-divider">';
+                html += `<div class="info-field">
+                    <div class="info-field-label">Beroep / Activiteit</div>
+                    <div class="info-field-value">${member.interestingActivity}</div>
+                </div>`;
+            }
+
+            // Notes
+            if (member.notes) {
+                html += '<hr class="info-section-divider">';
+                html += `<div class="info-field">
+                    <div class="info-field-label">Notities</div>
+                    <div class="info-field-value">${member.notes.replace(/\n/g, '<br>')}</div>
+                </div>`;
+            }
+
+            // Sources
+            if (member.sources) {
+                html += '<hr class="info-section-divider">';
+                // Convert each line: URLs become clickable links, other text stays as-is
+                const sourcesHtml = member.sources.split('\n').map(line => {
+                    const trimmed = line.trim();
+                    if (!trimmed) return '';
+                    // Check if the line contains a URL
+                    const urlRegex = /(https?:\/\/[^\s]+)/g;
+                    const linked = trimmed.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color:#2980b9;word-break:break-all;">$1</a>');
+                    return `<div style="margin-bottom:4px;">${linked}</div>`;
+                }).join('');
+                html += `<div class="info-field">
+                    <div class="info-field-label">Bronnen</div>
+                    <div class="info-field-value">${sourcesHtml}</div>
+                </div>`;
+            }
+
+            // Validation status
+            if (member.validationStatus) {
+                html += '<hr class="info-section-divider">';
+                const statusLabels = {
+                    'verified': { text: 'Gevalideerd', color: '#27ae60' },
+                    'unverified': { text: 'Te valideren', color: '#e74c3c' },
+                    'research': { text: 'Onderzoek gaande', color: '#f39c12' },
+                    'endOfLine': { text: 'Laatste in lijn', color: '#3498db' }
+                };
+                const status = statusLabels[member.validationStatus];
+                if (status) {
+                    html += `<div class="info-field">
+                        <div class="info-field-label">Validatiestatus</div>
+                        <div class="info-field-value" style="color: ${status.color}; font-weight: 600;">${status.text}</div>
+                    </div>`;
+                }
+            }
+
+            contentEl.innerHTML = html;
+            panel.classList.add('visible');
+        }
+
+        function hideInfoPanel() {
+            document.getElementById('infoPanel').classList.remove('visible');
+        }
+
+        function handleNodeClick(event, d) {
+            // Clear any search highlighting first
+            if (root.nodeElements) {
+                root.nodeElements.classed('search-highlight search-dimmed', false);
+            }
+            document.getElementById('clearSearchBtn').style.display = 'none';
+            document.getElementById('searchInput').value = '';
+            
+            if (currentMode === 'view') {
+                highlightFamily(d);
+                updateInfoPanel(d);
+            } else {
+                hideInfoPanel();
+                // In edit mode, clear any existing highlighting first
+                if (root.nodeElements && root.linkElements) {
+                    root.nodeElements.classed('highlighted dimmed selected', false);
+                    root.linkElements.classed('highlighted dimmed', false);
+                    if (root.marriageLinkElements) {
+                        root.marriageLinkElements.classed('highlighted dimmed', false);
+                    }
+                }
+                
+                // Highlight only the selected node in edit mode with orange border
+                d3.select(event.currentTarget).classed('selected', true);
+                
+                showMemberForm(d);
+            }
+        }
+
+        function highlightFamily(node) {
+            // Reset all highlighting including search
+            if (root.nodeElements) {
+                root.nodeElements.classed('highlighted dimmed search-highlight search-dimmed', false);
+            }
+            if (root.linkElements) {
+                root.linkElements.classed('highlighted dimmed', false);
+            }
+            if (root.marriageLinkElements) {
+                root.marriageLinkElements.classed('highlighted dimmed', false);
+            }
+            
+            // Clear search input if active
+            document.getElementById('searchInput').value = '';
+            document.getElementById('clearSearchBtn').style.display = 'none';
+            
+            // Find all direct ancestors AND descendants
+            const family = new Set();
+            
+            function findDirectAncestors(memberId, visited = new Set()) {
+                if (visited.has(memberId)) return; // Prevent infinite loops
+                visited.add(memberId);
+                
+                const member = treeData.find(m => m.id === memberId);
+                if (!member) return;
+                
+                family.add(memberId);
+                
+                // Add father and continue recursively
+                if (member.fatherId) {
+                    findDirectAncestors(member.fatherId, visited);
+                }
+                
+                // Add mother and continue recursively
+                if (member.motherId) {
+                    findDirectAncestors(member.motherId, visited);
+                }
+            }
+            
+            function findDirectDescendants(memberId, visited = new Set()) {
+                if (visited.has(memberId)) return; // Prevent infinite loops
+                visited.add(memberId);
+                
+                const member = treeData.find(m => m.id === memberId);
+                if (!member) return;
+                
+                family.add(memberId);
+                
+                // Add all children and continue recursively
+                member.childIds.forEach(childId => {
+                    findDirectDescendants(childId, visited);
+                });
+            }
+            
+            // Start from the clicked node and find both ancestors and descendants
+            findDirectAncestors(node.data.id);
+            findDirectDescendants(node.data.id);
+            
+            // Highlight family nodes
+            if (root.nodeElements) {
+                root.nodeElements.each(function(d) {
+                    if (family.has(d.data.id)) {
+                        d3.select(this).classed('highlighted', true);
+                    } else {
+                        d3.select(this).classed('dimmed', true);
+                    }
+                });
+            }
+            
+            // Highlight links between family members
+            if (root.linkElements) {
+                root.linkElements.each(function(d) {
+                    const sourceId = d.source.data.id;
+                    const targetId = d.target.data.id;
+
+                    if (family.has(sourceId) && family.has(targetId)) {
+                        d3.select(this).classed('highlighted', true);
+                    } else {
+                        d3.select(this).classed('dimmed', true);
+                    }
+                });
+            }
+
+            // Highlight marriage links between family members
+            if (root.marriageLinkElements) {
+                root.marriageLinkElements.each(function(d) {
+                    const sourceId = d.source.data.id;
+                    const targetId = d.target.data.id;
+
+                    if (family.has(sourceId) && family.has(targetId)) {
+                        d3.select(this).classed('highlighted', true);
+                    } else {
+                        d3.select(this).classed('dimmed', true);
+                    }
+                });
+            }
+        }
+
+        function showMemberForm(node) {
+            const member = node.data;
+            
+            // Determine if this is a parent node
+            const isParent = treeData.some(m => m.fatherId === member.id || m.motherId === member.id);
+            const parentType = member.gender === 'Male' && isParent ? 'Father' : 
+                              member.gender === 'Female' && isParent ? 'Mother' : null;
+            
+            // Create form HTML with text inputs for dates
+            let formHtml = `
+                <div class="member-form">
+                    <div class="form-group">
+                        <label for="firstName">First Name *</label>
+                        <input type="text" id="firstName" value="${member.firstName}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="namePrefix">Tussenvoegsel</label>
+                        <input type="text" id="namePrefix" value="${member.namePrefix || ''}" placeholder="bijv. van, van der, de">
+                    </div>
+                    <div class="form-group">
+                        <label for="lastName">Last Name *</label>
+                        <input type="text" id="lastName" value="${member.lastName}" required>
+                    </div>`;
+            
+            // Only show gender dropdown for root node (generation 0) and children, not for parent nodes
+            if (!parentType) {
+                formHtml += `
+                    <div class="form-group">
+                        <label for="gender">Gender</label>
+                        <select id="gender">
+                            <option value="Male" ${member.gender === 'Male' ? 'selected' : ''}>Male</option>
+                            <option value="Female" ${member.gender === 'Female' ? 'selected' : ''}>Female</option>
+                        </select>
+                    </div>`;
+            }
+            
+            formHtml += `
+                    <div class="form-group">
+                        <label for="birthDate">Birth Date</label>
+                        <input type="text" id="birthDate" value="${member.birthDate}" placeholder="dd/mm/yyyy or mm/yyyy or yyyy">
+                        <div class="date-help">Enter as: dd/mm/yyyy (full), mm/yyyy (month & year), or yyyy (year only)</div>
+                        <label style="display:inline-flex;align-items:center;gap:4px;margin-top:4px;font-size:12px;cursor:pointer;">
+                            <input type="checkbox" id="birthDateCirca" ${member.birthDateCirca ? 'checked' : ''}> Circa (ca.) — datum is bij benadering
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label for="birthLocation">Birth Location</label>
+                        <input type="text" id="birthLocation" value="${member.birthLocation}">
+                    </div>
+                    <div class="form-group">
+                        <label for="deathDate">Death Date</label>
+                        <input type="text" id="deathDate" value="${member.deathDate}" placeholder="dd/mm/yyyy or mm/yyyy or yyyy">
+                        <div class="date-help">Enter as: dd/mm/yyyy (full), mm/yyyy (month & year), or yyyy (year only)</div>
+                        <label style="display:inline-flex;align-items:center;gap:4px;margin-top:4px;font-size:12px;cursor:pointer;">
+                            <input type="checkbox" id="deathDateCirca" ${member.deathDateCirca ? 'checked' : ''}> Circa (ca.) — datum is bij benadering
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label for="deathLocation">Death Location</label>
+                        <input type="text" id="deathLocation" value="${member.deathLocation}">
+                    </div>
+                    <div class="form-group">
+                        <label for="baptismDate">Baptism Date</label>
+                        <input type="text" id="baptismDate" value="${member.baptismDate}" placeholder="dd/mm/yyyy or mm/yyyy or yyyy">
+                        <div class="date-help">Enter as: dd/mm/yyyy (full), mm/yyyy (month & year), or yyyy (year only)</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="religion">Religion</label>
+                        <input type="text" id="religion" value="${member.religion}">
+                    </div>
+                    <div class="form-group">
+                        <label for="interestingActivity">Interesting Activity</label>
+                        <input type="text" id="interestingActivity" value="${member.interestingActivity}">
+                    </div>
+                    <div class="form-group">
+                        <label for="notes">Notes</label>
+                        <textarea id="notes">${member.notes}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="sources">Bronnen</label>
+                        <textarea id="sources" placeholder="Eén bron per regel. URLs worden klikbaar in het infopaneel.">${member.sources || ''}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="validationStatus">Validatiestatus</label>
+                        <select id="validationStatus">
+                            <option value="" ${!member.validationStatus ? 'selected' : ''}>— Geen status —</option>
+                            <option value="verified" ${member.validationStatus === 'verified' ? 'selected' : ''}>Gevalideerd (groen vinkje)</option>
+                            <option value="unverified" ${member.validationStatus === 'unverified' ? 'selected' : ''}>Te valideren (rood vraagteken)</option>
+                            <option value="research" ${member.validationStatus === 'research' ? 'selected' : ''}>Onderzoek gaande (geel uitroepteken)</option>
+                            <option value="endOfLine" ${member.validationStatus === 'endOfLine' ? 'selected' : ''}>Laatste in lijn (blauw/groen)</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+            
+            // Set title based on whether it's a parent node
+            const title = parentType || getFullName(member);
+            
+            Swal.fire({
+                title: title,
+                html: formHtml,
+                width: '600px',
+                showCancelButton: true,
+                showConfirmButton: false,
+                cancelButtonText: 'Close',
+                footer: createFormActions(node),
+                didOpen: () => {
+                    setupFormActions(node);
+                }
+            });
+        }
+
+        function createFormActions(node) {
+            const member = node.data;
+            
+            let actions = `<div class="form-actions">`;
+            
+            if (!member.fatherId) {
+                actions += `<button class="btn-add-parent" data-parent="father">Add Father</button>`;
+            }
+            if (!member.motherId) {
+                actions += `<button class="btn-add-parent" data-parent="mother">Add Mother</button>`;
+            }
+            
+            actions += `<button class="btn-add-child">Add Child</button>`;
+            actions += `<button class="btn-edit">Save Changes</button>`;
+            actions += `<button class="btn-remove">Remove Person</button>`;
+            actions += `</div>`;
+            
+            return actions;
+        }
+
+        function setupFormActions(node) {
+            // Add parent buttons
+            document.querySelectorAll('.btn-add-parent').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const parentType = e.target.getAttribute('data-parent');
+                    addParent(node, parentType);
+                });
+            });
+            
+            // Add child button
+            const addChildBtn = document.querySelector('.btn-add-child');
+            if (addChildBtn) {
+                addChildBtn.addEventListener('click', () => addChild(node));
+            }
+            
+            // Save changes button
+            const saveBtn = document.querySelector('.btn-edit');
+            if (saveBtn) {
+                saveBtn.addEventListener('click', () => saveChanges(node));
+            }
+            
+            // Remove person button
+            const removeBtn = document.querySelector('.btn-remove');
+            if (removeBtn) {
+                removeBtn.addEventListener('click', () => removePerson(node));
+            }
+        }
+
+        function addParent(node, parentType) {
+            Swal.fire({
+                title: 'Add New Generation',
+                text: `Do you really want to add a new generation (${parentType})?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, add it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const newParent = {
+                        id: nextId++,
+                        firstName: '?',
+                        namePrefix: '',
+                        lastName: '?',
+                        gender: parentType === 'father' ? 'Male' : 'Female',
+                        birthDate: '',
+                        birthDateCirca: false,
+                        birthLocation: '',
+                        deathDate: '',
+                        deathDateCirca: false,
+                        deathLocation: '',
+                        baptismDate: '',
+                        religion: '',
+                        interestingActivity: '',
+                        notes: '',
+                        sources: '',
+                        validationStatus: '',
+                        fatherId: null,
+                        motherId: null,
+                        childIds: [node.data.id]
+                    };
+
+                    // Add to tree data
+                    treeData.push(newParent);
+                    hasUnsavedChanges = true;
+
+                    // Update the child's parent reference
+                    const childData = treeData.find(m => m.id === node.data.id);
+                    if (parentType === 'father') {
+                        childData.fatherId = newParent.id;
+                    } else {
+                        childData.motherId = newParent.id;
+                    }
+
+                    // Rebuild and render
+                    buildTree();
+                    renderTree(true);
+
+                    Swal.close();
+
+                    // Show form for the new parent
+                    setTimeout(() => {
+                        const newParentNode = root.nodes.find(n => n.data.id === newParent.id);
+                        if (newParentNode) {
+                            showMemberForm(newParentNode);
+                        }
+                    }, 100);
+                }
+            });
+        }
+
+        function addChild(node) {
+            Swal.fire({
+                title: 'Add New Generation',
+                text: 'Do you really want to add a new generation (child)?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, add it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const newChild = {
+                        id: nextId++,
+                        firstName: '?',
+                        namePrefix: '',
+                        lastName: '?',
+                        gender: 'Male',
+                        birthDate: '',
+                        birthDateCirca: false,
+                        birthLocation: '',
+                        deathDate: '',
+                        deathDateCirca: false,
+                        deathLocation: '',
+                        baptismDate: '',
+                        religion: '',
+                        interestingActivity: '',
+                        notes: '',
+                        sources: '',
+                        validationStatus: '',
+                        fatherId: node.data.gender === 'Male' ? node.data.id : null,
+                        motherId: node.data.gender === 'Female' ? node.data.id : null,
+                        childIds: []
+                    };
+
+                    // Add to tree data
+                    treeData.push(newChild);
+                    hasUnsavedChanges = true;
+
+                    // Update parent's child list
+                    const parentData = treeData.find(m => m.id === node.data.id);
+                    parentData.childIds.push(newChild.id);
+                    
+                    // Rebuild and render
+                    buildTree();
+                    renderTree(true);
+
+                    Swal.close();
+
+                    // Show form for the new child
+                    setTimeout(() => {
+                        const newChildNode = root.nodes.find(n => n.data.id === newChild.id);
+                        if (newChildNode) {
+                            showMemberForm(newChildNode);
+                        }
+                    }, 100);
+                }
+            });
+        }
+
+        function saveChanges(node) {
+            const genderElement = document.getElementById('gender');
+            const formData = {
+                firstName: document.getElementById('firstName').value.trim() || '?',
+                namePrefix: document.getElementById('namePrefix') ? document.getElementById('namePrefix').value.trim() : '',
+                lastName: document.getElementById('lastName').value.trim() || '?',
+                gender: genderElement ? genderElement.value : node.data.gender, // Keep existing gender if no dropdown
+                birthDate: document.getElementById('birthDate').value.trim(),
+                birthDateCirca: document.getElementById('birthDateCirca') ? document.getElementById('birthDateCirca').checked : false,
+                birthLocation: document.getElementById('birthLocation').value.trim(),
+                deathDate: document.getElementById('deathDate').value.trim(),
+                deathDateCirca: document.getElementById('deathDateCirca') ? document.getElementById('deathDateCirca').checked : false,
+                deathLocation: document.getElementById('deathLocation').value.trim(),
+                baptismDate: document.getElementById('baptismDate').value.trim(),
+                religion: document.getElementById('religion').value.trim(),
+                interestingActivity: document.getElementById('interestingActivity').value.trim(),
+                notes: document.getElementById('notes').value.trim(),
+                sources: document.getElementById('sources') ? document.getElementById('sources').value.trim() : '',
+                validationStatus: document.getElementById('validationStatus') ? document.getElementById('validationStatus').value : ''
+            };
+            
+            // Validate data
+            const validation = validateMemberData(formData, node.data.id);
+            if (!validation.valid) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Validation Error',
+                    text: validation.message
+                });
+                return;
+            }
+            
+            // Update member data
+            const member = treeData.find(m => m.id === node.data.id);
+            Object.assign(member, formData);
+            hasUnsavedChanges = true;
+
+            // Rebuild and render (preserve current view position)
+            buildTree();
+            renderTree(true);
+
+            Swal.close();
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Saved!',
+                text: 'Member data has been updated.',
+                timer: 1500,
+                showConfirmButton: false
+            });
+        }
+
+        function removePerson(node) {
+            const member = node.data;
+            
+            // Find related family members
+            const children = treeData.filter(m => m.fatherId === member.id || m.motherId === member.id);
+            const father = member.fatherId ? treeData.find(m => m.id === member.fatherId) : null;
+            const mother = member.motherId ? treeData.find(m => m.id === member.motherId) : null;
+            const spouse = treeData.find(m => 
+                (member.childIds.some(childId => m.childIds.includes(childId))) && 
+                m.id !== member.id && 
+                (m.gender !== member.gender)
+            );
+
+            // Build warning message
+            let warningMessage = `Are you sure you want to remove ${getFullName(member)}?`;
+            let affectedPersons = [];
+
+            if (children.length > 0) {
+                affectedPersons.push(`${children.length} child${children.length > 1 ? 'ren' : ''}`);
+            }
+            if (father) {
+                affectedPersons.push(`father (${getFullName(father)})`);
+            }
+            if (mother) {
+                affectedPersons.push(`mother (${getFullName(mother)})`);
+            }
+            if (spouse) {
+                affectedPersons.push(`spouse relationships`);
+            }
+
+            if (affectedPersons.length > 0) {
+                warningMessage += `\n\nThis will also affect relationships with: ${affectedPersons.join(', ')}`;
+            }
+
+            // Show confirmation dialog with double confirmation
+            Swal.fire({
+                title: 'Remove Family Member',
+                text: warningMessage,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, remove',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Second confirmation
+                    Swal.fire({
+                        title: 'Are you absolutely sure?',
+                        text: `This action cannot be undone! ${getFullName(member)} and all related family connections will be permanently removed.`,
+                        icon: 'error',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#3085d6',
+                        confirmButtonText: 'Yes, DELETE permanently',
+                        cancelButtonText: 'No, keep it'
+                    }).then((secondResult) => {
+                        if (secondResult.isConfirmed) {
+                            performRemoval(member);
+                        }
+                    });
+                }
+            });
+        }
+
+        function performRemoval(member) {
+            // Remove the member from treeData
+            treeData = treeData.filter(m => m.id !== member.id);
+            hasUnsavedChanges = true;
+
+            // Update all other members' relationships
+            treeData.forEach(otherMember => {
+                // Remove from parent relationships
+                if (otherMember.fatherId === member.id) {
+                    otherMember.fatherId = null;
+                }
+                if (otherMember.motherId === member.id) {
+                    otherMember.motherId = null;
+                }
+
+                // Remove from children lists
+                otherMember.childIds = otherMember.childIds.filter(childId => childId !== member.id);
+            });
+
+            // Handle the member's children - they become orphans or keep their other parent
+            const children = treeData.filter(m => member.childIds.includes(m.id));
+            children.forEach(child => {
+                if (child.fatherId === member.id) {
+                    child.fatherId = null;
+                }
+                if (child.motherId === member.id) {
+                    child.motherId = null;
+                }
+            });
+
+            // Handle the member's parents - remove this child from their childIds
+            if (member.fatherId) {
+                const father = treeData.find(m => m.id === member.fatherId);
+                if (father) {
+                    father.childIds = father.childIds.filter(childId => childId !== member.id);
+                }
+            }
+            if (member.motherId) {
+                const mother = treeData.find(m => m.id === member.motherId);
+                if (mother) {
+                    mother.childIds = mother.childIds.filter(childId => childId !== member.id);
+                }
+            }
+
+            // Rebuild and render the tree (preserve current view position)
+            buildTree();
+            renderTree(true);
+
+            // Close any open dialogs
+            Swal.close();
+
+            // Show success message
+            Swal.fire({
+                icon: 'success',
+                title: 'Removed!',
+                text: `${getFullName(member)} has been removed from the family tree.`,
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
+
+        // Helper: build full display name including tussenvoegsel
+        function getFullName(member) {
+            const first = member.firstName || '?';
+            const prefix = member.namePrefix || '';
+            const last = member.lastName || '?';
+            return prefix ? `${first} ${prefix} ${last}` : `${first} ${last}`;
+        }
+
+        function validateMemberData(data, memberId) {
+            // Required fields
+            if (!data.firstName || !data.lastName) {
+                return { valid: false, message: 'First name and last name are required.' };
+            }
+            
+            // Helper function to parse incomplete dates in dd/mm/yyyy format
+            function parseIncompleteDate(dateStr) {
+                if (!dateStr) return null;
+                dateStr = dateStr.trim();
+                
+                // Year only (yyyy)
+                if (/^\d{4}$/.test(dateStr)) {
+                    return new Date(parseInt(dateStr), 0, 1); // January 1st of that year
+                }
+                
+                // Month/Year (mm/yyyy)
+                if (/^\d{1,2}\/\d{4}$/.test(dateStr)) {
+                    const [month, year] = dateStr.split('/');
+                    return new Date(parseInt(year), parseInt(month) - 1, 1); // 1st day of that month
+                }
+                
+                // Full date (dd/mm/yyyy)
+                if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
+                    const [day, month, year] = dateStr.split('/');
+                    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                    // Validate that the date is valid (handles invalid dates like 31/02/2020)
+                    if (date.getDate() != parseInt(day) || 
+                        date.getMonth() != parseInt(month) - 1 || 
+                        date.getFullYear() != parseInt(year)) {
+                        return 'invalid';
+                    }
+                    return date;
+                }
+                
+                return 'invalid';
+            }
+            
+            // Validate date formats
+            if (data.birthDate) {
+                const birthDate = parseIncompleteDate(data.birthDate);
+                if (birthDate === 'invalid') {
+                    return { valid: false, message: 'Birth date must be in format dd/mm/yyyy, mm/yyyy, or yyyy.' };
+                }
+            }
+            
+            if (data.deathDate) {
+                const deathDate = parseIncompleteDate(data.deathDate);
+                if (deathDate === 'invalid') {
+                    return { valid: false, message: 'Death date must be in format dd/mm/yyyy, mm/yyyy, or yyyy.' };
+                }
+            }
+            
+            if (data.baptismDate) {
+                const baptismDate = parseIncompleteDate(data.baptismDate);
+                if (baptismDate === 'invalid') {
+                    return { valid: false, message: 'Baptism date must be in format dd/mm/yyyy, mm/yyyy, or yyyy.' };
+                }
+            }
+            
+            // Date logic validations (only if both dates are provided and parseable)
+            if (data.birthDate && data.deathDate) {
+                const birthDate = parseIncompleteDate(data.birthDate);
+                const deathDate = parseIncompleteDate(data.deathDate);
+                
+                if (birthDate && deathDate && birthDate !== 'invalid' && deathDate !== 'invalid') {
+                    if (birthDate >= deathDate) {
+                        return { valid: false, message: 'Birth date must be before death date.' };
+                    }
+                }
+            }
+            
+            // Age validation (≤ 110 years) - only when both birth and death dates are complete
+            if (data.birthDate && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(data.birthDate.trim()) &&
+                data.deathDate && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(data.deathDate.trim())) {
+                const birthDate = parseIncompleteDate(data.birthDate);
+                const compareDate = parseIncompleteDate(data.deathDate);
+
+                if (birthDate && compareDate && birthDate !== 'invalid' && compareDate !== 'invalid') {
+                    const ageInYears = (compareDate - birthDate) / (365.25 * 24 * 60 * 60 * 1000);
+
+                    if (ageInYears > 110) {
+                        return { valid: false, message: 'Age cannot exceed 110 years.' };
+                    }
+                }
+            }
+            
+            // Parent-child age gap validation (at least 12 years) - only for complete dates
+            const member = treeData.find(m => m.id === memberId);
+            if (member && data.birthDate && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(data.birthDate.trim())) {
+                const memberBirthDate = parseIncompleteDate(data.birthDate);
+                
+                if (memberBirthDate && memberBirthDate !== 'invalid') {
+                    // Check children
+                    for (const childId of member.childIds) {
+                        const child = treeData.find(m => m.id === childId);
+                        if (child && child.birthDate && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(child.birthDate.trim())) {
+                            const childBirthDate = parseIncompleteDate(child.birthDate);
+                            if (childBirthDate && childBirthDate !== 'invalid') {
+                                const ageDiff = (childBirthDate - memberBirthDate) / (365.25 * 24 * 60 * 60 * 1000);
+                                
+                                if (ageDiff < 12) {
+                                    return { valid: false, message: 'Parent must be at least 12 years older than child.' };
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Check parents
+                    if (member.fatherId) {
+                        const father = treeData.find(m => m.id === member.fatherId);
+                        if (father && father.birthDate && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(father.birthDate.trim())) {
+                            const fatherBirthDate = parseIncompleteDate(father.birthDate);
+                            if (fatherBirthDate && fatherBirthDate !== 'invalid') {
+                                const ageDiff = (memberBirthDate - fatherBirthDate) / (365.25 * 24 * 60 * 60 * 1000);
+                                
+                                if (ageDiff < 12) {
+                                    return { valid: false, message: 'Child must be at least 12 years younger than parent.' };
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (member.motherId) {
+                        const mother = treeData.find(m => m.id === member.motherId);
+                        if (mother && mother.birthDate && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(mother.birthDate.trim())) {
+                            const motherBirthDate = parseIncompleteDate(mother.birthDate);
+                            if (motherBirthDate && motherBirthDate !== 'invalid') {
+                                const ageDiff = (memberBirthDate - motherBirthDate) / (365.25 * 24 * 60 * 60 * 1000);
+                                
+                                if (ageDiff < 12) {
+                                    return { valid: false, message: 'Child must be at least 12 years younger than parent.' };
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            return { valid: true };
+        }
+
+        // File operations
+        function loadFile() {
+            document.getElementById('fileInput').click();
+        }
+
+        function handleFileLoad(event) {
+            const file = event.target.files[0];
+            if (file && file.type === 'text/xml') {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    parseXMLData(e.target.result);
+                };
+                reader.readAsText(file);
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid File',
+                    text: 'Please select a valid XML file.'
+                });
+            }
+            // Reset the input so the same file can be selected again
+            event.target.value = '';
+        }
+
+        function importGedcom() {
+            document.getElementById('gedcomFileInput').click();
+        }
+
+        function handleGedcomLoad(event) {
+            const file = event.target.files[0];
+            if (file && (file.name.toLowerCase().endsWith('.ged') || file.name.toLowerCase().endsWith('.gedcom'))) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const content = e.target.result;
+                    
+                    // Debug the file first
+                    debugGedcomImport(content);
+                    
+                    // Then parse it
+                    parseGedcomData(content);
+                };
+                reader.readAsText(file, 'UTF-8');
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid File',
+                    text: 'Please select a valid GEDCOM file (.ged or .gedcom).'
+                });
+            }
+            // Reset the input so the same file can be selected again
+            event.target.value = '';
+        }
+
+        // Debug function to help identify GEDCOM parsing issues
+        function debugGedcomImport(gedcomContent) {
+            const lines = gedcomContent.split(/\r?\n/);
+            let individualCount = 0;
+            let familyCount = 0;
+            let otherRecords = [];
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                
+                // Check for level 0 records
+                if (line.startsWith('0 ')) {
+                    if (line.includes('INDI')) {
+                        individualCount++;
+                    } else if (line.includes('FAM')) {
+                        familyCount++;
+                    } else if (!line.includes('HEAD') && !line.includes('TRLR')) {
+                        otherRecords.push(line.substring(0, 50)); // First 50 chars
+                    }
+                }
+            }
+            
+            console.log('=== GEDCOM Debug Info ===');
+            console.log(`Total individuals found: ${individualCount}`);
+            console.log(`Total families found: ${familyCount}`);
+            if (otherRecords.length > 0) {
+                console.log('Other record types found:');
+                otherRecords.slice(0, 10).forEach(rec => console.log(`  ${rec}`));
+            }
+            console.log('========================');
+        }
+
+        function parseGedcomData(gedcomContent) {
+            try {
+                // Show loading message
+                Swal.fire({
+                    title: 'Importing GEDCOM...',
+                    text: 'Please wait while we process your family tree.',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                const gedcomData = parseGedcom(gedcomContent);
+                
+                if (!gedcomData.individuals || gedcomData.individuals.length === 0) {
+                    throw new Error('No individuals found in GEDCOM file');
+                }
+
+                // Convert GEDCOM data to tree data format
+                const convertedData = convertGedcomToTreeData(gedcomData);
+                
+                // Update global variables
+                treeData = convertedData.members;
+                nextId = convertedData.nextId;
+                hasUnsavedChanges = false;
+                hideWelcomeScreen();
+                
+                // Update title if available from GEDCOM
+                if (gedcomData.fileName) {
+                    const appTitle = document.getElementById('appTitle');
+                    appTitle.textContent = `Family Tree: ${gedcomData.fileName}`;
+                }
+                
+                // IMPORTANT: Force rebuild and render with proper spacing
+                buildTree();
+                
+                // Add a small delay to ensure DOM is ready
+                setTimeout(() => {
+                    renderTree();
+                    
+                    // Force a re-render to ensure spacing is applied
+                    setTimeout(() => {
+                        console.log('Forcing re-render to apply spacing...');
+                        renderTree();
+                    }, 100);
+                    
+                    Swal.close();
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'GEDCOM Imported Successfully!',
+                        text: `Imported ${treeData.length} individuals from GEDCOM file.`,
+                        timer: 3000,
+                        showConfirmButton: false
+                    });
+                }, 100);
+                
+            } catch (error) {
+                console.error('GEDCOM Parse Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Import Error',
+                    text: 'Failed to import GEDCOM file: ' + error.message,
+                    footer: 'Please ensure the file is a valid GEDCOM format.'
+                });
+            }
+        }
+
+        // FIXED GEDCOM PARSER - More robust parsing
+        function parseGedcom(gedcomContent) {
+            const lines = gedcomContent.split(/\r?\n/);
+            const result = {
+                version: '5.5',
+                individuals: [],
+                families: [],
+                fileName: null
+            };
+            
+            let currentRecord = null;
+            let currentElement = null;
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                
+                // More robust line parsing
+                const lineMatch = line.match(/^(\d+)\s+(@[^@]+@\s+)?(.+)$/);
+                if (!lineMatch) continue;
+                
+                const level = parseInt(lineMatch[1]);
+                const xref = lineMatch[2] ? lineMatch[2].trim() : null;
+                const remainder = lineMatch[3].trim();
+                
+                let tag, value;
+                
+                if (xref) {
+                    // Line has an xref (e.g., "0 @I1@ INDI")
+                    const parts = remainder.split(/\s+(.+)/);
+                    tag = parts[0];
+                    value = parts[1] || '';
+                } else {
+                    // Line doesn't have xref (e.g., "1 NAME John Doe")
+                    const parts = remainder.split(/\s+(.+)/);
+                    tag = parts[0];
+                    value = parts[1] || '';
+                }
+                
+                // Level 0 records
+                if (level === 0) {
+                    if (tag === 'HEAD') {
+                        currentRecord = { type: 'HEAD' };
+                    } else if (xref && tag === 'INDI') {
+                        // Individual record
+                        currentRecord = {
+                            type: 'INDI',
+                            id: xref.replace(/@/g, ''),
+                            name: { given: '', prefix: '', surname: '' },
+                            sex: '',
+                            events: [],
+                            families: { child: [], spouse: [] },
+                            attributes: []
+                        };
+                        result.individuals.push(currentRecord);
+                    } else if (xref && tag === 'FAM') {
+                        // Family record
+                        currentRecord = {
+                            type: 'FAM',
+                            id: xref.replace(/@/g, ''),
+                            husband: null,
+                            wife: null,
+                            children: []
+                        };
+                        result.families.push(currentRecord);
+                    } else if (tag === 'TRLR') {
+                        // Trailer - end of file
+                        break;
+                    } else {
+                        // Unknown record type, skip
+                        currentRecord = null;
+                    }
+                    currentElement = currentRecord;
+                    continue;
+                }
+                
+                if (!currentRecord) continue;
+                
+                // Header parsing
+                if (currentRecord.type === 'HEAD') {
+                    if (level === 1) {
+                        if (tag === 'GEDC') {
+                            currentElement = { type: 'GEDC' };
+                        } else if (tag === 'FILE') {
+                            result.fileName = value.replace(/\.(ged|gedcom)$/i, '');
+                        }
+                    } else if (level === 2) {
+                        if (tag === 'VERS' && currentElement && currentElement.type === 'GEDC') {
+                            result.version = value;
+                        }
+                    }
+                    continue;
+                }
+                
+                // Individual parsing
+                if (currentRecord.type === 'INDI') {
+                    if (level === 1) {
+                        currentElement = null;
+                        switch (tag) {
+                            case 'NAME':
+                                currentElement = { type: 'NAME', value: value };
+                                parseGedcomName(value, currentRecord.name);
+                                break;
+                            case 'SEX':
+                                currentRecord.sex = value;
+                                break;
+                            case 'BIRT':
+                                currentElement = { type: 'BIRT', date: '', place: '' };
+                                currentRecord.events.push(currentElement);
+                                break;
+                            case 'DEAT':
+                                currentElement = { type: 'DEAT', date: '', place: '' };
+                                currentRecord.events.push(currentElement);
+                                break;
+                            case 'BAPM':
+                            case 'BAPT':
+                            case 'CHR':
+                                currentElement = { type: 'BAPM', date: '', place: '' };
+                                currentRecord.events.push(currentElement);
+                                break;
+                            case 'RELI':
+                                currentRecord.attributes.push({ type: 'RELI', value: value });
+                                break;
+                            case 'OCCU':
+                                currentRecord.attributes.push({ type: 'OCCU', value: value });
+                                break;
+                            case 'NOTE':
+                                currentRecord.attributes.push({ type: 'NOTE', value: value });
+                                break;
+                            case '_STAT':
+                                currentRecord.attributes.push({ type: '_STAT', value: value });
+                                break;
+                            case 'SOUR':
+                                currentRecord.attributes.push({ type: 'SOUR', value: value });
+                                break;
+                            case 'FAMC':
+                                // Family as child
+                                const famcId = value.replace(/@/g, '');
+                                if (famcId) currentRecord.families.child.push(famcId);
+                                break;
+                            case 'FAMS':
+                                // Family as spouse
+                                const famsId = value.replace(/@/g, '');
+                                if (famsId) currentRecord.families.spouse.push(famsId);
+                                break;
+                        }
+                    } else if (level === 2 && currentElement) {
+                        switch (tag) {
+                            case 'GIVN':
+                                if (currentElement.type === 'NAME') {
+                                    currentRecord.name.given = value;
+                                }
+                                break;
+                            case 'SPFX':
+                                if (currentElement.type === 'NAME') {
+                                    currentRecord.name.prefix = value;
+                                }
+                                break;
+                            case 'SURN':
+                                if (currentElement.type === 'NAME') {
+                                    currentRecord.name.surname = value;
+                                }
+                                break;
+                            case 'DATE':
+                                if (currentElement.date !== undefined) {
+                                    currentElement.date = value;
+                                }
+                                break;
+                            case 'PLAC':
+                                if (currentElement.place !== undefined) {
+                                    currentElement.place = value;
+                                }
+                                break;
+                        }
+                    } else if (level === 2 && !currentElement) {
+                        // Handle continuation lines for notes
+                        if (tag === 'CONT' || tag === 'CONC') {
+                            const lastAttr = currentRecord.attributes[currentRecord.attributes.length - 1];
+                            if (lastAttr && lastAttr.type === 'NOTE') {
+                                if (tag === 'CONT') {
+                                    lastAttr.value += '\n' + value;
+                                } else {
+                                    lastAttr.value += value;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Family parsing
+                if (currentRecord.type === 'FAM') {
+                    if (level === 1) {
+                        switch (tag) {
+                            case 'HUSB':
+                                const husbId = value.replace(/@/g, '');
+                                if (husbId) currentRecord.husband = husbId;
+                                break;
+                            case 'WIFE':
+                                const wifeId = value.replace(/@/g, '');
+                                if (wifeId) currentRecord.wife = wifeId;
+                                break;
+                            case 'CHIL':
+                                const childId = value.replace(/@/g, '');
+                                if (childId) currentRecord.children.push(childId);
+                                break;
+                        }
+                    }
+                }
+            }
+            
+            // Log parsing results for debugging
+            console.log(`Parsed ${result.individuals.length} individuals and ${result.families.length} families`);
+            
+            return result;
+        }
+
+        // Improved GEDCOM name parser
+        function parseGedcomName(nameStr, nameObj) {
+            if (!nameStr) return;
+            
+            // Initialize with defaults
+            nameObj.given = '';
+            nameObj.surname = '';
+            
+            // GEDCOM name format: "Given /Surname/" or "Given Surname"
+            const surnameMatch = nameStr.match(/\/([^\/]*)\//);
+            if (surnameMatch) {
+                // Extract surname from between slashes
+                nameObj.surname = surnameMatch[1].trim();
+                // Remove the surname part and get the given name
+                const givenPart = nameStr.replace(/\/[^\/]*\//, ' ').trim();
+                nameObj.given = givenPart;
+            } else {
+                // No slashes - try to split intelligently
+                const parts = nameStr.trim().split(/\s+/);
+                if (parts.length === 0) {
+                    nameObj.given = '?';
+                } else if (parts.length === 1) {
+                    // Only one part - could be given or surname
+                    // Assume it's given name
+                    nameObj.given = parts[0];
+                } else {
+                    // Multiple parts - assume last is surname
+                    nameObj.surname = parts[parts.length - 1];
+                    nameObj.given = parts.slice(0, -1).join(' ');
+                }
+            }
+            
+            // Ensure we have at least placeholder values
+            if (!nameObj.given) nameObj.given = '?';
+            if (!nameObj.surname) nameObj.surname = '?';
+        }
+
+        function convertGedcomToTreeData(gedcomData) {
+            const members = [];
+            const idMapping = new Map(); // Map GEDCOM IDs to new sequential IDs
+            let currentId = 1;
+            
+            // First pass: Create all individuals
+            gedcomData.individuals.forEach(individual => {
+                const newId = currentId++;
+                idMapping.set(individual.id, newId);
+                
+                // Find events
+                const birthEvent = individual.events.find(e => e.type === 'BIRT');
+                const deathEvent = individual.events.find(e => e.type === 'DEAT');
+                const baptismEvent = individual.events.find(e => e.type === 'BAPM');
+                
+                // Find attributes
+                const religion = individual.attributes.find(a => a.type === 'RELI');
+                const occupation = individual.attributes.find(a => a.type === 'OCCU');
+                const note = individual.attributes.find(a => a.type === 'NOTE');
+                const validationStat = individual.attributes.find(a => a.type === '_STAT');
+                
+                const member = {
+                    id: newId,
+                    firstName: individual.name.given || '?',
+                    namePrefix: individual.name.prefix || '',
+                    lastName: individual.name.surname || '?',
+                    gender: individual.sex === 'F' ? 'Female' : 'Male',
+                    birthDate: birthEvent ? convertGedcomDateToInternal(birthEvent.date) : '',
+                    birthDateCirca: birthEvent ? isGedcomDateCirca(birthEvent.date) : false,
+                    birthLocation: birthEvent ? birthEvent.place : '',
+                    deathDate: deathEvent ? convertGedcomDateToInternal(deathEvent.date) : '',
+                    deathDateCirca: deathEvent ? isGedcomDateCirca(deathEvent.date) : false,
+                    deathLocation: deathEvent ? deathEvent.place : '',
+                    baptismDate: baptismEvent ? convertGedcomDateToInternal(baptismEvent.date) : '',
+                    religion: religion ? religion.value : '',
+                    interestingActivity: occupation ? occupation.value : '',
+                    notes: note ? note.value : '',
+                    sources: individual.attributes.filter(a => a.type === 'SOUR').map(a => a.value).join('\n'),
+                    validationStatus: validationStat ? validationStat.value : '',
+                    fatherId: null,
+                    motherId: null,
+                    childIds: [],
+                    _gedcomId: individual.id, // Keep original for relationship mapping
+                    _gedcomFamilies: individual.families
+                };
+                
+                members.push(member);
+            });
+            
+            // Second pass: Establish family relationships
+            gedcomData.families.forEach(family => {
+                const fatherId = family.husband ? idMapping.get(family.husband) : null;
+                const motherId = family.wife ? idMapping.get(family.wife) : null;
+                
+                family.children.forEach(childGedcomId => {
+                    const childId = idMapping.get(childGedcomId);
+                    if (childId) {
+                        const child = members.find(m => m.id === childId);
+                        if (child) {
+                            if (fatherId) {
+                                child.fatherId = fatherId;
+                                const father = members.find(m => m.id === fatherId);
+                                if (father && !father.childIds.includes(childId)) {
+                                    father.childIds.push(childId);
+                                }
+                            }
+                            if (motherId) {
+                                child.motherId = motherId;
+                                const mother = members.find(m => m.id === motherId);
+                                if (mother && !mother.childIds.includes(childId)) {
+                                    mother.childIds.push(childId);
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+            
+            // Clean up temporary GEDCOM data
+            members.forEach(member => {
+                delete member._gedcomId;
+                delete member._gedcomFamilies;
+            });
+            
+            return {
+                members: members,
+                nextId: currentId
+            };
+        }
+
+        // Check if a GEDCOM date string has an approximate qualifier (ABT, ABOUT, EST, CAL)
+        function isGedcomDateCirca(gedcomDate) {
+            if (!gedcomDate) return false;
+            return /^(ABT|ABOUT|EST|ESTIMATED|CAL|CALCULATED)\s+/i.test(gedcomDate.trim());
+        }
+
+        function convertGedcomDateToInternal(gedcomDate) {
+            if (!gedcomDate) return '';
+
+            // Clean the date string
+            gedcomDate = gedcomDate.trim().toUpperCase();
+
+            // Remove common GEDCOM date qualifiers
+            gedcomDate = gedcomDate.replace(/^(ABT|ABOUT|EST|ESTIMATED|CAL|CALCULATED|AFT|AFTER|BEF|BEFORE|BET|BETWEEN|FROM|TO)\s+/i, '');
+            
+            // Handle "BETWEEN date1 AND date2" - take first date
+            if (gedcomDate.includes(' AND ')) {
+                gedcomDate = gedcomDate.split(' AND ')[0].replace(/^BETWEEN\s+/i, '');
+            }
+            
+            // Month name mapping
+            const monthMap = {
+                'JAN': '01', 'FEB': '02', 'MAR': '03', 'APR': '04',
+                'MAY': '05', 'JUN': '06', 'JUL': '07', 'AUG': '08',
+                'SEP': '09', 'OCT': '10', 'NOV': '11', 'DEC': '12'
+            };
+            
+            // Year only (4 digits)
+            if (/^\d{4}$/.test(gedcomDate)) {
+                return gedcomDate;
+            }
+            
+            // DD MON YYYY format (e.g., "15 MAY 1990")
+            const fullDateMatch = gedcomDate.match(/^(\d{1,2})\s+([A-Z]{3})\s+(\d{4})$/);
+            if (fullDateMatch) {
+                const day = fullDateMatch[1].padStart(2, '0');
+                const month = monthMap[fullDateMatch[2]] || '01';
+                const year = fullDateMatch[3];
+                return `${day}/${month}/${year}`;
+            }
+            
+            // MON YYYY format (e.g., "MAY 1990")
+            const monthYearMatch = gedcomDate.match(/^([A-Z]{3})\s+(\d{4})$/);
+            if (monthYearMatch) {
+                const month = monthMap[monthYearMatch[1]] || '01';
+                const year = monthYearMatch[2];
+                return `${month}/${year}`;
+            }
+            
+            // Try to extract just the year if other formats fail
+            const yearMatch = gedcomDate.match(/(\d{4})/);
+            if (yearMatch) {
+                return yearMatch[1];
+            }
+            
+            // Return empty string if we can't parse it
+            return '';
+        }
+
+        function saveFile() {
+            try {
+                const xmlString = generateXML();
+                const blob = new Blob([xmlString], { type: 'text/xml' });
+                const url = URL.createObjectURL(blob);
+                
+                // Get the tree name from the title field and clean it for filename use
+                const treeName = document.getElementById('appTitle').textContent.trim();
+                const cleanTreeName = sanitizeFilename(treeName);
+                
+                // Generate filename with tree name and date-time stamp
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = (now.getMonth() + 1).toString().padStart(2, '0');
+                const day = now.getDate().toString().padStart(2, '0');
+                const hours = now.getHours().toString().padStart(2, '0');
+                const minutes = now.getMinutes().toString().padStart(2, '0');
+                const seconds = now.getSeconds().toString().padStart(2, '0');
+                
+                const filename = `${cleanTreeName}_${year}-${month}-${day}_${hours}-${minutes}-${seconds}.xml`;
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                hasUnsavedChanges = false;
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Saved!',
+                    text: `Family tree has been saved to ${filename}`,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Save Error',
+                    text: 'Failed to save file: ' + error.message
+                });
+            }
+        }
+
+        function exportGedcom() {
+            try {
+                const gedcomString = generateGEDCOM();
+                const blob = new Blob([gedcomString], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                
+                // Get the tree name from the title field and clean it for filename use
+                const treeName = document.getElementById('appTitle').textContent.trim();
+                const cleanTreeName = sanitizeFilename(treeName);
+                
+                // Generate filename with tree name and date-time stamp
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = (now.getMonth() + 1).toString().padStart(2, '0');
+                const day = now.getDate().toString().padStart(2, '0');
+                const hours = now.getHours().toString().padStart(2, '0');
+                const minutes = now.getMinutes().toString().padStart(2, '0');
+                const seconds = now.getSeconds().toString().padStart(2, '0');
+                
+                const filename = `${cleanTreeName}_${year}-${month}-${day}_${hours}-${minutes}-${seconds}.ged`;
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                hasUnsavedChanges = false;
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'GEDCOM Exported!',
+                    text: `Family tree has been exported to ${filename}`,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Export Error',
+                    text: 'Failed to export GEDCOM file: ' + error.message
+                });
+            }
+        }
+
+        function generateGEDCOM() {
+            const now = new Date();
+
+            let gedcom = '';
+
+            // Header section
+            gedcom += '0 HEAD\n';
+            gedcom += '1 GEDC\n';
+            gedcom += '2 VERS 7.0\n';
+            gedcom += '2 FORM LINEAGE-LINKED\n';
+            gedcom += '1 CHAR UTF-8\n';
+            gedcom += `1 SOUR Family Tree Application\n`;
+            gedcom += `2 VERS 1.0\n`;
+            gedcom += `2 NAME Family Tree Application\n`;
+            gedcom += `1 DATE ${formatGedcomDate(now)}\n`;
+            gedcom += `2 TIME ${now.toTimeString().substring(0, 8)}\n`;
+            gedcom += `1 FILE ${sanitizeFilename(document.getElementById('appTitle').textContent.trim())}.ged\n`;
+            
+            // Individual records
+            treeData.forEach(member => {
+                gedcom += `0 @I${member.id}@ INDI\n`;
+                
+                // Name
+                const firstName = escapeGedcom(member.firstName || '?');
+                const prefix = escapeGedcom(member.namePrefix || '');
+                const lastName = escapeGedcom(member.lastName || '?');
+                const fullSurname = prefix ? `${prefix} ${lastName}` : lastName;
+                gedcom += `1 NAME ${firstName} /${fullSurname}/\n`;
+                gedcom += `2 GIVN ${firstName}\n`;
+                if (prefix) {
+                    gedcom += `2 SPFX ${prefix}\n`;
+                }
+                gedcom += `2 SURN ${lastName}\n`;
+                
+                // Gender/Sex
+                const sex = member.gender === 'Female' ? 'F' : 'M';
+                gedcom += `1 SEX ${sex}\n`;
+                
+                // Birth event
+                if (member.birthDate || member.birthLocation) {
+                    gedcom += '1 BIRT\n';
+                    if (member.birthDate) {
+                        const abtPrefix = member.birthDateCirca ? 'ABT ' : '';
+                        gedcom += `2 DATE ${abtPrefix}${convertToGedcomDate(member.birthDate)}\n`;
+                    }
+                    if (member.birthLocation) {
+                        gedcom += `2 PLAC ${escapeGedcom(member.birthLocation)}\n`;
+                    }
+                }
+
+                // Death event
+                if (member.deathDate || member.deathLocation) {
+                    gedcom += '1 DEAT\n';
+                    if (member.deathDate) {
+                        const abtPrefix = member.deathDateCirca ? 'ABT ' : '';
+                        gedcom += `2 DATE ${abtPrefix}${convertToGedcomDate(member.deathDate)}\n`;
+                    }
+                    if (member.deathLocation) {
+                        gedcom += `2 PLAC ${escapeGedcom(member.deathLocation)}\n`;
+                    }
+                }
+                
+                // Baptism event
+                if (member.baptismDate) {
+                    gedcom += '1 BAPM\n';
+                    gedcom += `2 DATE ${convertToGedcomDate(member.baptismDate)}\n`;
+                }
+                
+                // Religion
+                if (member.religion) {
+                    gedcom += `1 RELI ${escapeGedcom(member.religion)}\n`;
+                }
+                
+                // Occupation (interesting activity)
+                if (member.interestingActivity) {
+                    gedcom += `1 OCCU ${escapeGedcom(member.interestingActivity)}\n`;
+                }
+                
+                // Notes
+                if (member.notes) {
+                    gedcom += `1 NOTE ${escapeGedcom(member.notes)}\n`;
+                }
+
+                // Sources
+                if (member.sources) {
+                    member.sources.split('\n').forEach(line => {
+                        const trimmed = line.trim();
+                        if (trimmed) {
+                            gedcom += `1 SOUR ${escapeGedcom(trimmed)}\n`;
+                        }
+                    });
+                }
+
+                // Validation status (custom tag)
+                if (member.validationStatus) {
+                    gedcom += `1 _STAT ${escapeGedcom(member.validationStatus)}\n`;
+                }
+
+                // Family relationships will be added via family records
+                // Find families where this person is a child
+                const parentFamily = findParentFamily(member);
+                if (parentFamily) {
+                    gedcom += `1 FAMC @F${parentFamily.id}@\n`;
+                }
+                
+                // Find families where this person is a parent
+                const spouseFamilies = findSpouseFamilies(member);
+                spouseFamilies.forEach(family => {
+                    gedcom += `1 FAMS @F${family.id}@\n`;
+                });
+            });
+            
+            // Family records
+            const families = generateFamilyRecords();
+            families.forEach(family => {
+                gedcom += `0 @F${family.id}@ FAM\n`;
+                
+                if (family.husband) {
+                    gedcom += `1 HUSB @I${family.husband.id}@\n`;
+                }
+                if (family.wife) {
+                    gedcom += `1 WIFE @I${family.wife.id}@\n`;
+                }
+                
+                family.children.forEach(child => {
+                    gedcom += `1 CHIL @I${child.id}@\n`;
+                });
+            });
+            
+            // Trailer
+            gedcom += '0 TRLR\n';
+            
+            return gedcom;
+        }
+
+        function findParentFamily(member) {
+            if (!member.fatherId && !member.motherId) return null;
+            
+            const father = member.fatherId ? treeData.find(m => m.id === member.fatherId) : null;
+            const mother = member.motherId ? treeData.find(m => m.id === member.motherId) : null;
+            
+            // Generate a unique family ID based on parents
+            let familyId = '';
+            if (father && mother) {
+                familyId = `${Math.min(father.id, mother.id)}_${Math.max(father.id, mother.id)}`;
+            } else if (father) {
+                familyId = `${father.id}_single`;
+            } else if (mother) {
+                familyId = `${mother.id}_single`;
+            }
+            
+            return {
+                id: familyId,
+                husband: father,
+                wife: mother,
+                children: [member]
+            };
+        }
+
+        function findSpouseFamilies(member) {
+            const families = [];
+            
+            // Find all children of this member
+            const children = treeData.filter(m => 
+                m.fatherId === member.id || m.motherId === member.id
+            );
+            
+            if (children.length === 0) return families;
+            
+            // Group children by their other parent to create family units
+            const familyGroups = new Map();
+            
+            children.forEach(child => {
+                const otherParentId = member.gender === 'Male' ? child.motherId : child.fatherId;
+                const key = otherParentId || 'single';
+                
+                if (!familyGroups.has(key)) {
+                    familyGroups.set(key, []);
+                }
+                familyGroups.get(key).push(child);
+            });
+            
+            familyGroups.forEach((childrenGroup, otherParentId) => {
+                const otherParent = otherParentId !== 'single' ? 
+                    treeData.find(m => m.id === parseInt(otherParentId)) : null;
+                
+                let familyId;
+                if (otherParent) {
+                    familyId = `${Math.min(member.id, otherParent.id)}_${Math.max(member.id, otherParent.id)}`;
+                } else {
+                    familyId = `${member.id}_single`;
+                }
+                
+                families.push({
+                    id: familyId,
+                    husband: member.gender === 'Male' ? member : otherParent,
+                    wife: member.gender === 'Female' ? member : otherParent,
+                    children: childrenGroup
+                });
+            });
+            
+            return families;
+        }
+
+        function generateFamilyRecords() {
+            const familyMap = new Map();
+            
+            // Process all members to create family records
+            treeData.forEach(member => {
+                // Create family for this person's parents if they exist
+                if (member.fatherId || member.motherId) {
+                    const father = member.fatherId ? treeData.find(m => m.id === member.fatherId) : null;
+                    const mother = member.motherId ? treeData.find(m => m.id === member.motherId) : null;
+                    
+                    let familyId;
+                    if (father && mother) {
+                        familyId = `${Math.min(father.id, mother.id)}_${Math.max(father.id, mother.id)}`;
+                    } else if (father) {
+                        familyId = `${father.id}_single`;
+                    } else if (mother) {
+                        familyId = `${mother.id}_single`;
+                    }
+                    
+                    if (!familyMap.has(familyId)) {
+                        familyMap.set(familyId, {
+                            id: familyId,
+                            husband: father,
+                            wife: mother,
+                            children: []
+                        });
+                    }
+                    
+                    familyMap.get(familyId).children.push(member);
+                }
+            });
+            
+            return Array.from(familyMap.values());
+        }
+
+        function convertToGedcomDate(dateStr) {
+            if (!dateStr) return '';
+            
+            dateStr = dateStr.trim();
+            
+            // Year only (yyyy)
+            if (/^\d{4}$/.test(dateStr)) {
+                return dateStr;
+            }
+            
+            // Month/Year (mm/yyyy)
+            if (/^\d{1,2}\/\d{4}$/.test(dateStr)) {
+                const [month, year] = dateStr.split('/');
+                const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
+                                   'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+                const monthName = monthNames[parseInt(month) - 1];
+                return `${monthName} ${year}`;
+            }
+            
+            // Full date (dd/mm/yyyy)
+            if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
+                const [day, month, year] = dateStr.split('/');
+                const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
+                                   'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+                const monthName = monthNames[parseInt(month) - 1];
+                return `${parseInt(day)} ${monthName} ${year}`;
+            }
+            
+            // Return as is if format is unknown
+            return dateStr;
+        }
+
+        function formatGedcomDate(date) {
+            const day = date.getDate();
+            const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
+                               'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+            const month = monthNames[date.getMonth()];
+            const year = date.getFullYear();
+            
+            return `${day} ${month} ${year}`;
+        }
+
+        function escapeGedcom(str) {
+            if (!str) return '';
+            // GEDCOM 7.0 uses UTF-8, so most characters are allowed
+            // Just replace line breaks with spaces and trim excessive whitespace
+            return str.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
+        }
+
+        function sanitizeFilename(filename) {
+            if (!filename || filename.trim().length === 0) {
+                return 'FamilyTree';
+            }
+
+            // Strip repeated "Family Tree of:", "Family Tree:", etc. prefixes
+            let stripped = filename;
+            while (/^Family\s*Tree\s*(of\s*)?[:\-]?\s*/i.test(stripped)) {
+                stripped = stripped.replace(/^Family\s*Tree\s*(of\s*)?[:\-]?\s*/i, '');
+            }
+            // Also strip underscored variants (from previously saved filenames)
+            while (/^Family_Tree_?(of_?)?/i.test(stripped)) {
+                stripped = stripped.replace(/^Family_Tree_?(of_?)?/i, '');
+            }
+            // Strip ALL timestamp patterns from anywhere in the string (not just leading)
+            // Pattern 1: _YYYY-MM-DD_HH-MM-SS (from saveFile/exportGedcom)
+            stripped = stripped.replace(/_?\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}/g, '');
+            // Pattern 2: _YYYYMMDDTHHMMSS (from generateGEDCOM 1 FILE header, e.g. 20260226T082200)
+            stripped = stripped.replace(/_?\d{8}T\d{4,6}/g, '');
+            // Pattern 3: _YYYY-MM-DDTHHMM (e.g. 2026-02-26T0822)
+            stripped = stripped.replace(/_?\d{4}-\d{2}-\d{2}T\d{4,6}/g, '');
+            // Clean up any resulting double underscores or trailing underscores
+            stripped = stripped.replace(/_{2,}/g, '_').replace(/^_|_$/g, '');
+            // Use stripped version if it still has content, otherwise use original
+            if (stripped.trim().length > 0) {
+                filename = stripped.trim();
+            }
+
+            // Remove or replace invalid characters for filenames
+            let cleaned = filename
+                .replace(/[<>:"/\\|?*]/g, '') // Remove invalid characters
+                .replace(/\s+/g, '_') // Replace spaces with underscores
+                .replace(/_{2,}/g, '_') // Replace multiple underscores with single
+                .replace(/^_|_$/g, '') // Remove leading/trailing underscores
+                .substring(0, 50); // Limit length to 50 characters
+            
+            // If after cleaning we have nothing left, use default name
+            if (cleaned.length === 0) {
+                cleaned = 'FamilyTree';
+            }
+            
+            return cleaned;
+        }
+
+        function generateXML() {
+            let xml = '<?xml version="1.0" encoding="UTF-8"?>\n<familyTree>\n';
+            
+            treeData.forEach(member => {
+                xml += '    <member';
+                xml += ` id="${member.id}"`;
+                xml += ` firstName="${escapeXML(member.firstName)}"`;
+                xml += ` namePrefix="${escapeXML(member.namePrefix || '')}"`;
+                xml += ` lastName="${escapeXML(member.lastName)}"`;
+                xml += ` gender="${member.gender}"`;
+                xml += ` birthDate="${member.birthDate}"`;
+                xml += ` birthDateCirca="${member.birthDateCirca ? 'true' : ''}"`;
+                xml += ` birthLocation="${escapeXML(member.birthLocation)}"`;
+                xml += ` deathDate="${member.deathDate}"`;
+                xml += ` deathDateCirca="${member.deathDateCirca ? 'true' : ''}"`;
+                xml += ` deathLocation="${escapeXML(member.deathLocation)}"`;
+                xml += ` baptismDate="${member.baptismDate}"`;
+                xml += ` religion="${escapeXML(member.religion)}"`;
+                xml += ` interestingActivity="${escapeXML(member.interestingActivity)}"`;
+                xml += ` notes="${escapeXML(member.notes)}"`;
+                xml += ` sources="${escapeXML(member.sources || '')}"`;
+                xml += ` validationStatus="${member.validationStatus || ''}"`;
+                xml += ` fatherId="${member.fatherId || ''}"`;
+                xml += ` motherId="${member.motherId || ''}"`;
+                xml += ` childIds="${member.childIds.join(',')}"`;
+                xml += '/>\n';
+            });
+            
+            xml += '</familyTree>';
+            return xml;
+        }
+
+        function escapeXML(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;')
+                     .replace(/</g, '&lt;')
+                     .replace(/>/g, '&gt;')
+                     .replace(/"/g, '&quot;')
+                     .replace(/'/g, '&#39;');
+        }
+
+        // Zoom and pan controls
+        function zoomBy(factor) {
+            svg.transition().duration(300).call(
+                zoom.scaleBy, factor
+            );
+        }
+
+        function resetView() {
+            svg.transition().duration(500).call(
+                zoom.transform,
+                d3.zoomIdentity
+            );
+        }
+
+        function handleZoomSlider(event) {
+            const scale = parseFloat(event.target.value);
+            svg.transition().duration(100).call(
+                zoom.scaleTo, scale
+            );
+        }
+
+        function updateZoomDisplay(scale) {
+            const percentage = Math.round(scale * 100);
+            document.getElementById('zoomValue').textContent = percentage + '%';
+            document.getElementById('zoomSlider').value = scale;
+        }
+
+        function handleKeyboard(event) {
+            // Handle Ctrl+F or Cmd+F for search
+            if ((event.ctrlKey || event.metaKey) && event.key === 'f') {
+                event.preventDefault();
+                document.getElementById('searchInput').focus();
+                return;
+            }
+            
+            // Handle Escape to clear search
+            if (event.key === 'Escape') {
+                if (document.getElementById('searchInput').value) {
+                    clearSearch();
+                    return;
+                }
+            }
+            
+            if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') return;
+            
+            const step = 50;
+            const currentTransform = d3.zoomTransform(svg.node());
+            
+            switch(event.key) {
+                case 'ArrowLeft':
+                    event.preventDefault();
+                    svg.call(zoom.translateBy, -step, 0);
+                    break;
+                case 'ArrowRight':
+                    event.preventDefault();
+                    svg.call(zoom.translateBy, step, 0);
+                    break;
+                case 'ArrowUp':
+                    event.preventDefault();
+                    svg.call(zoom.translateBy, 0, -step);
+                    break;
+                case 'ArrowDown':
+                    event.preventDefault();
+                    svg.call(zoom.translateBy, 0, step);
+                    break;
+                case '+':
+                case '=':
+                    event.preventDefault();
+                    zoomBy(1.2);
+                    break;
+                case '-':
+                    event.preventDefault();
+                    zoomBy(0.8);
+                    break;
+                case '0':
+                    event.preventDefault();
+                    resetView();
+                    break;
+            }
+        }
+    </script>
+</body>
+</html>
