@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Handleiding &amp; Ontwerp – Stamboom Applicatie</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            color: #2c3e50;
+            font-size: 15px;
+            line-height: 1.7;
+        }
+
+        /* ── COVER ─────────────────────────────────────── */
+        .cover {
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            color: white;
+            padding: 64px 48px 48px;
+            position: relative;
+            overflow: hidden;
+        }
+        .cover::after {
+            content: '🌳';
+            position: absolute;
+            right: 60px; top: 40px;
+            font-size: 120px;
+            opacity: 0.15;
+        }
+        .cover .badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.4);
+            border-radius: 20px;
+            padding: 4px 14px;
+            font-size: 12px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+        .cover h1 {
+            font-size: 2.8rem;
+            font-weight: 300;
+            margin-bottom: 10px;
+        }
+        .cover h1 strong { font-weight: 700; }
+        .cover .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.8;
+            margin-bottom: 32px;
+        }
+        .cover .meta {
+            display: flex;
+            gap: 32px;
+            font-size: 13px;
+            opacity: 0.7;
+            border-top: 1px solid rgba(255,255,255,0.2);
+            padding-top: 20px;
+        }
+        .cover .meta span strong { color: white; opacity: 1; }
+
+        /* ── LAYOUT ─────────────────────────────────────── */
+        .wrapper {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 48px 32px;
+        }
+
+        /* ── TOC ─────────────────────────────────────────── */
+        .toc {
+            background: white;
+            border-radius: 10px;
+            padding: 28px 32px;
+            margin-bottom: 40px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+        }
+        .toc h2 {
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #7f8c8d;
+            margin-bottom: 16px;
+        }
+        .toc ol {
+            padding-left: 20px;
+        }
+        .toc li { margin: 6px 0; }
+        .toc a { color: #3498db; text-decoration: none; }
+        .toc a:hover { text-decoration: underline; }
+        .toc .toc-section { font-weight: 600; color: #2c3e50; }
+        .toc .toc-sub { font-size: 13px; color: #7f8c8d; margin-left: 6px; }
+
+        /* ── SECTIONS ────────────────────────────────────── */
+        .section {
+            background: white;
+            border-radius: 10px;
+            padding: 36px 40px;
+            margin-bottom: 28px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+        }
+
+        .section-label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: #3498db;
+            margin-bottom: 6px;
+        }
+
+        h2.section-title {
+            font-size: 1.7rem;
+            font-weight: 300;
+            color: #2c3e50;
+            margin-bottom: 24px;
+            padding-bottom: 14px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+        h2.section-title strong { font-weight: 700; }
+
+        h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin: 28px 0 10px;
+        }
+        h3:first-of-type { margin-top: 0; }
+
+        p { margin-bottom: 12px; }
+        p:last-child { margin-bottom: 0; }
+
+        /* ── CALLOUT BOXES ───────────────────────────────── */
+        .callout {
+            border-left: 4px solid #3498db;
+            background: #eaf4fd;
+            border-radius: 0 8px 8px 0;
+            padding: 14px 18px;
+            margin: 16px 0;
+            font-size: 14px;
+        }
+        .callout.tip { border-color: #27ae60; background: #eafaf1; }
+        .callout.warn { border-color: #f39c12; background: #fef9e7; }
+        .callout strong { display: block; margin-bottom: 4px; }
+
+        /* ── STEP LIST ───────────────────────────────────── */
+        .steps { list-style: none; padding: 0; }
+        .steps li {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            margin-bottom: 14px;
+        }
+        .steps li .step-num {
+            flex-shrink: 0;
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            background: #3498db;
+            color: white;
+            font-weight: 700;
+            font-size: 13px;
+            display: flex; align-items: center; justify-content: center;
+            margin-top: 2px;
+        }
+        .steps li .step-body { flex: 1; }
+        .steps li .step-body strong { display: block; }
+
+        /* ── UI BUTTON LABELS ────────────────────────────── */
+        kbd {
+            display: inline-block;
+            background: #2c3e50;
+            color: white;
+            border-radius: 5px;
+            padding: 2px 9px;
+            font-size: 12px;
+            font-family: inherit;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        kbd.green  { background: #27ae60; }
+        kbd.orange { background: #f39c12; }
+        kbd.red    { background: #e74c3c; }
+        kbd.key {
+            background: #ecf0f1;
+            color: #2c3e50;
+            border: 1px solid #bdc3c7;
+        }
+
+        /* ── TABLE ───────────────────────────────────────── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            margin: 16px 0;
+        }
+        th {
+            background: #2c3e50;
+            color: white;
+            text-align: left;
+            padding: 10px 14px;
+            font-weight: 600;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+        }
+        td {
+            padding: 9px 14px;
+            border-bottom: 1px solid #ecf0f1;
+            vertical-align: top;
+        }
+        tr:last-child td { border-bottom: none; }
+        tr:nth-child(even) td { background: #f8f9fa; }
+        td em { color: #7f8c8d; font-style: normal; font-size: 13px; }
+
+        /* ── BADGE ICONS ─────────────────────────────────── */
+        .badge-demo {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 12px 0;
+        }
+        .badge-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        .badge-circle {
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            color: white;
+            font-weight: 700;
+            font-size: 12px;
+            display: flex; align-items: center; justify-content: center;
+            border: 2px solid white;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+            flex-shrink: 0;
+        }
+
+        /* ── NODE DEMO ───────────────────────────────────── */
+        .node-demo {
+            display: flex;
+            gap: 20px;
+            margin: 14px 0;
+        }
+        .node-box {
+            border-radius: 6px;
+            padding: 10px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            border-width: 2px;
+            border-style: solid;
+        }
+        .node-male   { background: #a8d0ff; border-color: #2980b9; color: #1a5276; }
+        .node-female { background: #ffb6c1; border-color: #e91e63; color: #7d1536; }
+
+        /* ── ARCHITECTURE DIAGRAM ────────────────────────── */
+        .arch {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 24px;
+            margin: 16px 0;
+            text-align: center;
+        }
+        .arch-row {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 6px 0;
+        }
+        .arch-box {
+            background: #2c3e50;
+            color: white;
+            border-radius: 6px;
+            padding: 8px 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .arch-box.blue { background: #3498db; }
+        .arch-box.green { background: #27ae60; }
+        .arch-box.orange { background: #e67e22; }
+        .arch-box.gray { background: #7f8c8d; }
+        .arch-arrow {
+            text-align: center;
+            color: #bdc3c7;
+            font-size: 20px;
+            line-height: 1;
+            margin: 2px 0;
+        }
+        .arch-label {
+            font-size: 11px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 4px 0;
+        }
+
+        /* ── DIVIDER ─────────────────────────────────────── */
+        hr {
+            border: none;
+            border-top: 1px solid #ecf0f1;
+            margin: 24px 0;
+        }
+
+        /* ── FOOTER ──────────────────────────────────────── */
+        .doc-footer {
+            text-align: center;
+            color: #bdc3c7;
+            font-size: 12px;
+            padding: 24px 0 40px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!--  COVER                                                     -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="cover">
+    <div class="badge">Documentatie</div>
+    <h1><strong>Stamboom</strong> Applicatie</h1>
+    <p class="subtitle">Handleiding &amp; Algemeen Ontwerp — versie 1.0 Familytree</p>
+    <div class="meta">
+        <span><strong>Versie</strong><br>V1.0</span>
+        <span><strong>Formaat</strong><br>Enkelvoudig HTML-bestand</span>
+        <span><strong>Datum</strong><br>Maart 2026</span>
+        <span><strong>Taal</strong><br>Nederlands / English (UI)</span>
+    </div>
+</div>
+
+<div class="wrapper">
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!--  INHOUDSOPGAVE                                             -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="toc">
+    <h2>Inhoudsopgave</h2>
+    <ol>
+        <li><a href="#s1" class="toc-section">Inleiding</a></li>
+        <li><a href="#s2" class="toc-section">Eerste gebruik &amp; opstarten</a></li>
+        <li><a href="#s3" class="toc-section">Schermopbouw</a></li>
+        <li>
+            <a href="#s4" class="toc-section">Handleiding — functies per onderwerp</a>
+            <span class="toc-sub">Bestanden · Weergave · Bewerken · Zoeken · Zoom · Toetsenbord</span>
+        </li>
+        <li><a href="#s5" class="toc-section">Gegevensvelden per persoon</a></li>
+        <li><a href="#s6" class="toc-section">Validatieregels</a></li>
+        <li><a href="#s7" class="toc-section">Algemeen ontwerp</a></li>
+        <li><a href="#s8" class="toc-section">Bestandsformaten</a></li>
+        <li><a href="#s9" class="toc-section">Systeemvereisten</a></li>
+    </ol>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!--  1. INLEIDING                                              -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="section" id="s1">
+    <div class="section-label">Sectie 1</div>
+    <h2 class="section-title"><strong>Inleiding</strong></h2>
+
+    <p>De <strong>Stamboom Applicatie</strong> is een interactief, browsergebaseerd hulpmiddel voor het vastleggen, visualiseren en beheren van genealogische gegevens. De applicatie bestaat uit één enkel HTML-bestand en vereist geen installatie of internetverbinding nadat het bestand is geladen.</p>
+
+    <p>De boom wordt weergegeven als een hiërarchische grafiek — generaties naast elkaar, met lijnen die ouder–kind relaties tonen en gestippelde rode verbindingen voor huwelijken/partnerschappen. Personen kunnen vrij worden toegevoegd, bewerkt en verwijderd via een formulier-interface.</p>
+
+    <div class="callout tip">
+        <strong>🌱 Nieuw beginnen?</strong>
+        Laad het bestand <code>template_nieuw_start.ged</code> via <kbd>Import GEDCOM</kbd>. Dit geeft een kant-en-klaar startpunt met een voorbeeldfamilie van drie generaties, zodat je de structuur meteen kunt zien en invullen.
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!--  2. EERSTE GEBRUIK                                         -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="section" id="s2">
+    <div class="section-label">Sectie 2</div>
+    <h2 class="section-title"><strong>Eerste gebruik</strong> &amp; opstarten</h2>
+
+    <p>Open het bestand <code>Familytree_V1_0.html</code> in een moderne webbrowser (Chrome, Edge of Firefox aanbevolen). Er is geen server of installatie nodig.</p>
+
+    <h3>Scenario A — Nieuwe stamboom aanmaken</h3>
+    <ul class="steps">
+        <li>
+            <span class="step-num">1</span>
+            <div class="step-body">
+                <strong>Open de applicatie.</strong>
+                Het welkomstscherm verschijnt met twee opties.
+            </div>
+        </li>
+        <li>
+            <span class="step-num">2</span>
+            <div class="step-body">
+                <strong>Klik op <kbd>&#128194; Importeer GEDCOM</kbd></strong> en selecteer <code>template_nieuw_start.ged</code>.
+                De startsjabloon wordt geladen met een driegeneraties-voorbeeld.
+            </div>
+        </li>
+        <li>
+            <span class="step-num">3</span>
+            <div class="step-body">
+                <strong>Klik op de titel "Stamboom"</strong> linksboven en typ de gewenste naam voor jouw boom (bijv. <em>Familie Janssen</em>). De naam wordt ook gebruikt als bestandsnaam bij opslaan.
+            </div>
+        </li>
+        <li>
+            <span class="step-num">4</span>
+            <div class="step-body">
+                <strong>Schakel over naar <kbd>Edit</kbd>-modus</strong> (rechtsboven) en klik op een persoon om diens gegevens in te vullen.
+            </div>
+        </li>
+        <li>
+            <span class="step-num">5</span>
+            <div class="step-body">
+                <strong>Sla op als XML</strong> via <kbd class="green">Save XML</kbd>. Het bestand krijgt automatisch een tijdstempel in de naam.
+            </div>
+        </li>
+    </ul>
+
+    <h3>Scenario B — Bestaande stamboom laden</h3>
+    <ul class="steps">
+        <li>
+            <span class="step-num">1</span>
+            <div class="step-body"><strong>Klik op <kbd>&#128194; Laad XML</kbd></strong> (welkomstscherm of topbalk) voor een eerder opgeslagen XML-bestand.</div>
+        </li>
+        <li>
+            <span class="step-num">2</span>
+            <div class="step-body">Of klik op <kbd>Import GEDCOM</kbd> om een <code>.ged</code>-bestand te importeren vanuit andere genealogie-software.</div>
+        </li>
+    </ul>
+
+    <div class="callout warn">
+        <strong>⚠️ Geen automatisch opslaan</strong>
+        De applicatie slaat <em>niet</em> automatisch op. Gebruik regelmatig <kbd class="green">Save XML</kbd> om wijzigingen te bewaren. Bij het sluiten van de browser met niet-opgeslagen wijzigingen verschijnt een waarschuwing.
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!--  3. SCHERMOPBOUW                                           -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="section" id="s3">
+    <div class="section-label">Sectie 3</div>
+    <h2 class="section-title"><strong>Schermopbouw</strong></h2>
+
+    <p>Het scherm bestaat uit drie horizontale zones:</p>
+
+    <div class="arch">
+        <div class="arch-label">Bovenbalk</div>
+        <div class="arch-row">
+            <div class="arch-box">Titel (bewerkbaar)</div>
+            <div class="arch-box blue">Zoekbalk</div>
+            <div class="arch-box">View / Edit</div>
+            <div class="arch-box">Load XML</div>
+            <div class="arch-box green">Save XML</div>
+            <div class="arch-box">Import GEDCOM</div>
+            <div class="arch-box orange">Export GEDCOM</div>
+        </div>
+        <div class="arch-arrow">↕</div>
+        <div class="arch-label">Hoofdgebied</div>
+        <div class="arch-row">
+            <div class="arch-box gray">Infopaneel (links, klik-op-persoon)</div>
+            <div class="arch-box blue">SVG Boomvisualisatie</div>
+        </div>
+        <div class="arch-arrow">↕</div>
+        <div class="arch-label">Onderbalk</div>
+        <div class="arch-row">
+            <div class="arch-box">Zoom Out</div>
+            <div class="arch-box blue">Schuifregelaar + %</div>
+            <div class="arch-box">Zoom In</div>
+            <div class="arch-box">Reset View</div>
+        </div>
+    </div>
+
+    <h3>Bovenbalk</h3>
+    <p>Bevat de <strong>bewerkbare titel</strong> van de stamboom (klik erop om te wijzigen), de zoekbalk voor achternamen, de modus-schakelaar (<em>View / Edit</em>) en alle knoppen voor bestandsbeheer.</p>
+
+    <h3>Hoofdgebied — boomvisualisatie</h3>
+    <p>De boom wordt getoond als een SVG-grafiek. <strong>Generaties staan naast elkaar</strong> met verticale scheidingslijnen en labels (Generatie 1, 2, …). <strong>Blauw</strong> = man, <strong>roze</strong> = vrouw. Gestippelde rode lijnen verbinden partners. De boom is vrij te slepen met de muis en te zoomen met het scrollwiel.</p>
+
+    <div class="node-demo">
+        <div class="node-box node-male">Jan de Vries &nbsp;♂</div>
+        <div class="node-box node-female">Maria Smit &nbsp;♀</div>
+    </div>
+
+    <h3>Infopaneel (linker zijkant)</h3>
+    <p>Verschijnt alleen in <em>View</em>-modus na een klik op een persoon. Toont alle beschikbare gegevens van die persoon: naam, geslacht, geboortedatum/-plaats, overlijdensdatum/-plaats, doopdatum, religie, beroep, bijzondere activiteiten en notities. Sluit via ✕ of door op een andere persoon te klikken.</p>
+
+    <h3>Validatiebadges</h3>
+    <p>Op elke persoonskaart kan een kleine badge verschijnen die de datakwaliteit aangeeft:</p>
+    <div class="badge-demo">
+        <div class="badge-item"><div class="badge-circle" style="background:#27ae60;">✓</div> Gevalideerd</div>
+        <div class="badge-item"><div class="badge-circle" style="background:#e74c3c;">?</div> Te valideren</div>
+        <div class="badge-item"><div class="badge-circle" style="background:#f39c12;">!</div> Onderzoek gaande</div>
+        <div class="badge-item"><div class="badge-circle" style="background:#2980b9;">⬡</div> Laatste in lijn</div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!--  4. HANDLEIDING                                            -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="section" id="s4">
+    <div class="section-label">Sectie 4</div>
+    <h2 class="section-title"><strong>Handleiding</strong> — functies per onderwerp</h2>
+
+    <!-- 4.1 Bestanden -->
+    <h3>4.1 &nbsp; Bestanden laden &amp; opslaan</h3>
+    <table>
+        <tr>
+            <th>Knop</th>
+            <th>Functie</th>
+        </tr>
+        <tr>
+            <td><kbd>Load XML</kbd></td>
+            <td>Laad een eerder opgeslagen <code>.xml</code>-bestand (intern formaat). <em>Overschrijft de huidige boom in het geheugen.</em></td>
+        </tr>
+        <tr>
+            <td><kbd class="green">Save XML</kbd></td>
+            <td>Sla de huidige boom op als <code>.xml</code>-bestand. Bestandsnaam = <code>[Titel]_[datum-tijd].xml</code></td>
+        </tr>
+        <tr>
+            <td><kbd>Import GEDCOM</kbd></td>
+            <td>Importeer een <code>.ged</code>-bestand vanuit andere genealogiesoftware of het meegeleverde startsjabloon.</td>
+        </tr>
+        <tr>
+            <td><kbd class="orange">Export GEDCOM</kbd></td>
+            <td>Exporteer de huidige boom als <code>.ged</code>-bestand (GEDCOM 7.0) voor gebruik in andere programma's.</td>
+        </tr>
+    </table>
+    <div class="callout tip">
+        <strong>💡 Aanbeveling werkwijze</strong>
+        Werk dagelijks in XML (sneller laden/opslaan, volledig formaat). Exporteer naar GEDCOM alleen als je gegevens wilt uitwisselen met andere software of back-up wilt maken in standaardformaat.
+    </div>
+
+    <hr>
+
+    <!-- 4.2 Weergavemodus -->
+    <h3>4.2 &nbsp; Weergavemodus (View)</h3>
+    <p>De standaardmodus bij opstarten. In deze modus kun je de boom bekijken en navigeren, maar niet bewerken.</p>
+    <ul class="steps">
+        <li>
+            <span class="step-num">→</span>
+            <div class="step-body"><strong>Klik op een persoonskaart</strong> om het infopaneel te openen én de directe bloedlijn te markeren (voorouders én nakomelingen worden helder weergegeven, de rest wordt vervaagd).</div>
+        </li>
+        <li>
+            <span class="step-num">→</span>
+            <div class="step-body"><strong>Klik ergens op de achtergrond</strong> om de markering te wissen.</div>
+        </li>
+        <li>
+            <span class="step-num">→</span>
+            <div class="step-body"><strong>Slepen</strong> met de muis om de boom te verschuiven.</div>
+        </li>
+        <li>
+            <span class="step-num">→</span>
+            <div class="step-body"><strong>Scrollwiel</strong> om in- of uit te zoomen.</div>
+        </li>
+    </ul>
+
+    <hr>
+
+    <!-- 4.3 Bewerkingsmodus -->
+    <h3>4.3 &nbsp; Bewerkingsmodus (Edit)</h3>
+    <p>Schakel over naar Edit via de knop <kbd>Edit</kbd> rechtsboven. In deze modus opent een klik op een persoonskaart een bewerkingsformulier.</p>
+
+    <p><strong>Het formulier bevat de volgende acties:</strong></p>
+    <table>
+        <tr>
+            <th>Actie-knop</th>
+            <th>Effect</th>
+        </tr>
+        <tr>
+            <td><kbd>Add Father</kbd></td>
+            <td>Voegt een nieuwe vaderkaart toe boven de geselecteerde persoon. Verschijnt alleen als er nog geen vader is.</td>
+        </tr>
+        <tr>
+            <td><kbd>Add Mother</kbd></td>
+            <td>Voegt een nieuwe moederkaart toe. Verschijnt alleen als er nog geen moeder is.</td>
+        </tr>
+        <tr>
+            <td><kbd>Add Child</kbd></td>
+            <td>Voegt een nieuw kind toe onder de geselecteerde persoon.</td>
+        </tr>
+        <tr>
+            <td><kbd class="green">Save Changes</kbd></td>
+            <td>Slaat de gewijzigde gegevens op in het geheugen en herlaadt de boom. De validatieregels worden hierbij gecontroleerd.</td>
+        </tr>
+        <tr>
+            <td><kbd class="red">Remove Person</kbd></td>
+            <td>Verwijdert de persoon <em>en alle relaties</em> naar deze persoon. Er verschijnt een bevestigingsdialoog.</td>
+        </tr>
+    </table>
+
+    <div class="callout warn">
+        <strong>⚠️ Verwijderen is onomkeerbaar</strong>
+        Er is geen "Ongedaan maken". Sla altijd eerst op via <kbd class="green">Save XML</kbd> voordat je personen verwijdert.
+    </div>
+
+    <hr>
+
+    <!-- 4.4 Zoeken -->
+    <h3>4.4 &nbsp; Zoeken op achternaam</h3>
+    <ul class="steps">
+        <li>
+            <span class="step-num">1</span>
+            <div class="step-body">Typ een (deel van een) achternaam in het zoekveld rechtsboven, of druk op <kbd class="key">Ctrl+F</kbd> om het zoekveld te activeren.</div>
+        </li>
+        <li>
+            <span class="step-num">2</span>
+            <div class="step-body">Druk op <kbd class="key">Enter</kbd> of klik <kbd>Search</kbd>. Overeenkomende personen worden oranje gemarkeerd met een pulserende rand; de overige kaarten worden vervaagd.</div>
+        </li>
+        <li>
+            <span class="step-num">3</span>
+            <div class="step-body">Klik op <kbd>Clear</kbd> of druk op <kbd class="key">Esc</kbd> om de zoekmodus te beëindigen.</div>
+        </li>
+    </ul>
+
+    <hr>
+
+    <!-- 4.5 Zoom -->
+    <h3>4.5 &nbsp; Navigatie &amp; zoom</h3>
+    <table>
+        <tr><th>Actie</th><th>Beschrijving</th></tr>
+        <tr><td><kbd>Zoom In</kbd> / <kbd>Zoom Out</kbd></td><td>Vergroot of verkleint de weergave.</td></tr>
+        <tr><td>Schuifregelaar</td><td>Stel zoomniveau in van 50% tot 200% (of verder via scrollwiel).</td></tr>
+        <tr><td><kbd>Reset View</kbd></td><td>Zet de zoom terug naar 100% en centreert de boom.</td></tr>
+        <tr><td>Scrollwiel</td><td>Zoomen op de cursorpositie (bereik 5% – 300%).</td></tr>
+        <tr><td>Muissleep</td><td>De boom verslepen over het canvas.</td></tr>
+    </table>
+
+    <hr>
+
+    <!-- 4.6 Toetsenbord -->
+    <h3>4.6 &nbsp; Sneltoetsen</h3>
+    <table>
+        <tr><th>Toets</th><th>Functie</th></tr>
+        <tr><td><kbd class="key">Ctrl+F</kbd></td><td>Focus op het zoekveld</td></tr>
+        <tr><td><kbd class="key">Esc</kbd></td><td>Zoekmodus wissen</td></tr>
+        <tr><td><kbd class="key">↑ ↓ ← →</kbd></td><td>De boom verschuiven (50 px per druk)</td></tr>
+        <tr><td><kbd class="key">+</kbd> of <kbd class="key">=</kbd></td><td>Inzoomen (×1,2)</td></tr>
+        <tr><td><kbd class="key">−</kbd></td><td>Uitzoomen (×0,8)</td></tr>
+        <tr><td><kbd class="key">0</kbd></td><td>Weergave resetten naar beginstand</td></tr>
+    </table>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!--  5. GEGEVENSVELDEN                                         -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="section" id="s5">
+    <div class="section-label">Sectie 5</div>
+    <h2 class="section-title"><strong>Gegevensvelden</strong> per persoon</h2>
+
+    <table>
+        <tr>
+            <th>Veld</th>
+            <th>Verplicht</th>
+            <th>Toelichting</th>
+        </tr>
+        <tr>
+            <td><strong>Voornaam</strong> (First Name)</td>
+            <td>Ja ✱</td>
+            <td>Volledige voornaam of initialen</td>
+        </tr>
+        <tr>
+            <td><strong>Tussenvoegsel</strong> (Name Prefix)</td>
+            <td>Nee</td>
+            <td>Bijv. <em>van</em>, <em>van der</em>, <em>de</em></td>
+        </tr>
+        <tr>
+            <td><strong>Achternaam</strong> (Last Name)</td>
+            <td>Ja ✱</td>
+            <td>Geboortenaam (meisjesnaam voor vrouwen)</td>
+        </tr>
+        <tr>
+            <td><strong>Geslacht</strong> (Gender)</td>
+            <td>Nee</td>
+            <td>Male / Female — bepaalt de kleur van de kaart</td>
+        </tr>
+        <tr>
+            <td><strong>Geboortedatum</strong> (Birth Date)</td>
+            <td>Nee</td>
+            <td>Formaat: <code>dd/mm/yyyy</code> · <code>mm/yyyy</code> · <code>yyyy</code></td>
+        </tr>
+        <tr>
+            <td><strong>Geboorteplaats</strong> (Birth Location)</td>
+            <td>Nee</td>
+            <td>Vrije tekst, bijv. <em>Amsterdam</em></td>
+        </tr>
+        <tr>
+            <td><strong>Overlijdensdatum</strong> (Death Date)</td>
+            <td>Nee</td>
+            <td>Zelfde formaten als geboortedatum</td>
+        </tr>
+        <tr>
+            <td><strong>Overlijdensplaats</strong> (Death Location)</td>
+            <td>Nee</td>
+            <td>Vrije tekst</td>
+        </tr>
+        <tr>
+            <td><strong>Doopdatum</strong> (Baptism Date)</td>
+            <td>Nee</td>
+            <td>Zelfde formaten als geboortedatum</td>
+        </tr>
+        <tr>
+            <td><strong>Religie</strong> (Religion)</td>
+            <td>Nee</td>
+            <td>Vrije tekst, bijv. <em>Rooms-Katholiek</em></td>
+        </tr>
+        <tr>
+            <td><strong>Bijzondere activiteit</strong></td>
+            <td>Nee</td>
+            <td>Interessante bezigheid, beroep of opmerkelijk feit</td>
+        </tr>
+        <tr>
+            <td><strong>Notities</strong> (Notes)</td>
+            <td>Nee</td>
+            <td>Vrij tekstveld; bronverwijzingen, URLs, extra context</td>
+        </tr>
+        <tr>
+            <td><strong>Validatiestatus</strong></td>
+            <td>Nee</td>
+            <td>Zie sectie 3 voor de vier statusopties en bijbehorende badges</td>
+        </tr>
+    </table>
+
+    <div class="callout">
+        <strong>📅 Datum-formaten</strong>
+        Alle datumvelden accepteren drie precisieniveaus:<br>
+        • <strong>Volledig:</strong> <code>15/04/1850</code><br>
+        • <strong>Maand + jaar:</strong> <code>04/1850</code><br>
+        • <strong>Alleen jaar:</strong> <code>1850</code>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!--  6. VALIDATIEREGELS                                        -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="section" id="s6">
+    <div class="section-label">Sectie 6</div>
+    <h2 class="section-title"><strong>Validatieregels</strong></h2>
+
+    <p>Bij het opslaan van een persoon worden de volgende regels automatisch gecontroleerd. Bij een overtreding verschijnt een foutmelding en worden de gegevens <em>niet</em> opgeslagen.</p>
+
+    <table>
+        <tr><th>Regel</th><th>Beschrijving</th></tr>
+        <tr>
+            <td>Verplichte velden</td>
+            <td>Voornaam en achternaam zijn beide verplicht.</td>
+        </tr>
+        <tr>
+            <td>Datumformaat</td>
+            <td>Geboorte-, overlijdens- en doopdatum moeten het format <code>dd/mm/yyyy</code>, <code>mm/yyyy</code> of <code>yyyy</code> volgen. Ongeldige datums (bijv. 31/02) worden geweigerd.</td>
+        </tr>
+        <tr>
+            <td>Geboorte vóór overlijden</td>
+            <td>Overlijdensdatum moet later zijn dan de geboortedatum.</td>
+        </tr>
+        <tr>
+            <td>Maximale leeftijd</td>
+            <td>Het leeftijdsverschil tussen geboorte en overlijden mag niet meer dan 110 jaar bedragen (alleen bij volledige datums).</td>
+        </tr>
+        <tr>
+            <td>Minimale generatiekloof</td>
+            <td>Er moet minimaal 12 jaar leeftijdsverschil zijn tussen ouder en kind (alleen bij volledige datums).</td>
+        </tr>
+    </table>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!--  7. ALGEMEEN ONTWERP                                       -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="section" id="s7">
+    <div class="section-label">Sectie 7</div>
+    <h2 class="section-title"><strong>Algemeen ontwerp</strong></h2>
+
+    <h3>Architectuurprincipe</h3>
+    <p>De applicatie is opgebouwd als een <strong>Single-Page Application (SPA) in één HTML-bestand</strong>. Er is geen server, geen database en geen installatie nodig. Alle logica, styling en structuur zitten in één bestand dat direct door de browser kan worden geopend.</p>
+
+    <div class="arch">
+        <div class="arch-label">Externe bibliotheken (CDN — eenmalig geladen)</div>
+        <div class="arch-row">
+            <div class="arch-box blue">D3.js v7.8.5<br><small style="font-weight:300;font-size:11px;">SVG / boom-layout</small></div>
+            <div class="arch-box blue">Lodash v4.17.21<br><small style="font-weight:300;font-size:11px;">Hulpfuncties</small></div>
+            <div class="arch-box blue">SweetAlert2 v11.10.1<br><small style="font-weight:300;font-size:11px;">Formulieren / dialogen</small></div>
+        </div>
+        <div class="arch-arrow">↓</div>
+        <div class="arch-label">Applicatielagen</div>
+        <div class="arch-row">
+            <div class="arch-box green">UI &amp; Layout<br><small style="font-weight:300;font-size:11px;">HTML + CSS</small></div>
+            <div class="arch-box orange">Datamodel<br><small style="font-weight:300;font-size:11px;">JavaScript array</small></div>
+            <div class="arch-box">Weergave-engine<br><small style="font-weight:300;font-size:11px;">D3 hierarchy + SVG</small></div>
+        </div>
+        <div class="arch-arrow">↓</div>
+        <div class="arch-label">Bestandsformaten (in/out)</div>
+        <div class="arch-row">
+            <div class="arch-box green">XML (intern)</div>
+            <div class="arch-box orange">GEDCOM 7.0</div>
+        </div>
+    </div>
+
+    <h3>Datamodel</h3>
+    <p>Alle personen worden opgeslagen in een platte JavaScript-array (<code>treeData</code>) van objecten. Elk object bevat:</p>
+    <table>
+        <tr><th>Eigenschap</th><th>Type</th><th>Beschrijving</th></tr>
+        <tr><td><code>id</code></td><td>Nummer</td><td>Unieke identifier, automatisch opgehoogd</td></tr>
+        <tr><td><code>firstName</code>, <code>namePrefix</code>, <code>lastName</code></td><td>Tekst</td><td>Naam-componenten</td></tr>
+        <tr><td><code>gender</code></td><td><code>'Male'</code> / <code>'Female'</code></td><td>Bepaalt kaartkleur</td></tr>
+        <tr><td><code>fatherId</code>, <code>motherId</code></td><td>Nummer / null</td><td>Verwijzingen naar ouder-records</td></tr>
+        <tr><td><code>childIds</code></td><td>Array van nummers</td><td>Verwijzingen naar kind-records</td></tr>
+        <tr><td><code>birthDate</code>, <code>birthLocation</code>, etc.</td><td>Tekst</td><td>Levensgebeurtenissen</td></tr>
+        <tr><td><code>validationStatus</code></td><td>Tekst / null</td><td>verified · unverified · research · endOfLine</td></tr>
+    </table>
+
+    <h3>Boom-opbouw en rendering</h3>
+    <p>De boomstructuur wordt opgebouwd via <code>buildTree()</code>: de platte array wordt omgezet naar een hiërarchisch object dat D3's <code>d3.hierarchy()</code> en een aangepaste generatie-gebaseerde layout gebruikt. Elke generatie krijgt een vaste X-positie; de Y-positie wordt berekend op basis van het aantal personen in die generatie.</p>
+
+    <p>De rendering (<code>renderTree()</code>) tekent:</p>
+    <ul style="margin-left:24px;margin-bottom:12px;">
+        <li><strong>Connectielijnen</strong> — grijze paden van kind naar ouder</li>
+        <li><strong>Huwelijkslijnen</strong> — gestippelde rode horizontale lijnen tussen partners</li>
+        <li><strong>Persoonskaarten</strong> — afgeronde rechthoeken met naam, data en badge</li>
+        <li><strong>Generatielabels</strong> — verticale kolomkoppen met nummer en scheidingslijn</li>
+    </ul>
+
+    <h3>Bestandsbeheer &amp; naamgeving</h3>
+    <p>Bij opslaan wordt de bestandsnaam automatisch samengesteld uit de stamboomtitel en een tijdstempel:</p>
+    <div class="callout">
+        <code>[Stamboomtitel]_[YYYY]-[MM]-[DD]_[HH]-[MM]-[SS].xml</code><br>
+        Voorbeeld: <code>Familie_Janssen_2026-03-03_14-22-05.xml</code>
+    </div>
+    <p>Speciale tekens in de titel worden automatisch gesaneerd (spaties worden vervangen door underscores, ongeldige tekens verwijderd).</p>
+
+    <h3>Lokale opslag</h3>
+    <p>De applicatie slaat de <strong>stamboomtitel</strong> op in <code>localStorage</code> van de browser, zodat deze bewaard blijft bij het herladen van het bestand. Alle overige gegevens worden <em>niet</em> automatisch lokaal opgeslagen — hiervoor is de Save XML-knop bedoeld.</p>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!--  8. BESTANDSFORMATEN                                       -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="section" id="s8">
+    <div class="section-label">Sectie 8</div>
+    <h2 class="section-title"><strong>Bestandsformaten</strong></h2>
+
+    <h3>XML (intern werkformaat)</h3>
+    <p>Het XML-formaat is het <em>primaire werkformaat</em> van deze applicatie. Het bevat alle velden die de applicatie ondersteunt, inclusief <code>validationStatus</code>, <code>baptismDate</code>, <code>religion</code> en <code>interestingActivity</code> — velden die niet volledig in GEDCOM worden uitgedrukt.</p>
+
+    <h3>GEDCOM 7.0 (uitwisselingsformaat)</h3>
+    <p>GEDCOM (GEnealogical Data COMmunication) is de internationale standaard voor het uitwisselen van genealogische gegevens. De applicatie ondersteunt <strong>GEDCOM versie 7.0</strong>, UTF-8 gecodeerd.</p>
+
+    <table>
+        <tr><th>GEDCOM-tag</th><th>Veld in applicatie</th></tr>
+        <tr><td><code>NAME</code> / <code>GIVN</code> / <code>SURN</code></td><td>Voornaam · Tussenvoegsel · Achternaam</td></tr>
+        <tr><td><code>SEX</code></td><td>Geslacht (M / F)</td></tr>
+        <tr><td><code>BIRT DATE</code> / <code>BIRT PLAC</code></td><td>Geboortedatum / -plaats</td></tr>
+        <tr><td><code>DEAT DATE</code> / <code>DEAT PLAC</code></td><td>Overlijdensdatum / -plaats</td></tr>
+        <tr><td><code>OCCU</code></td><td>Beroep / Bijzondere activiteit</td></tr>
+        <tr><td><code>NOTE</code></td><td>Notities en bronverwijzingen</td></tr>
+        <tr><td><code>SOUR</code></td><td>Bronverwijzing (URL)</td></tr>
+        <tr><td><code>FAMC</code> / <code>FAMS</code></td><td>Kind-in-gezin / Partner-in-gezin</td></tr>
+        <tr><td><code>HUSB</code> / <code>WIFE</code> / <code>CHIL</code></td><td>Vader / Moeder / Kind (in FAM-record)</td></tr>
+    </table>
+
+    <div class="callout">
+        <strong>ℹ️ Importeer altijd via het startsjabloon</strong>
+        Voor een nieuwe stamboom is het aanbevolen om te starten met <code>template_nieuw_start.ged</code> (importeer via <kbd>Import GEDCOM</kbd>). Dit geeft direct de juiste structuur en voorbeeldpersonen om van te werken.
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!--  9. SYSTEEMVEREISTEN                                       -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="section" id="s9">
+    <div class="section-label">Sectie 9</div>
+    <h2 class="section-title"><strong>Systeemvereisten</strong></h2>
+
+    <table>
+        <tr><th>Component</th><th>Vereiste</th></tr>
+        <tr>
+            <td>Browser</td>
+            <td>Google Chrome 90+, Microsoft Edge 90+, Firefox 88+, Safari 14+</td>
+        </tr>
+        <tr>
+            <td>Internetverbinding</td>
+            <td>Alleen nodig bij eerste laden (voor het ophalen van CDN-bibliotheken). Daarna volledig offline bruikbaar als de bibliotheken gecached zijn.</td>
+        </tr>
+        <tr>
+            <td>Besturingssysteem</td>
+            <td>Onafhankelijk — Windows, macOS, Linux</td>
+        </tr>
+        <tr>
+            <td>Installatie</td>
+            <td>Geen — open het <code>.html</code>-bestand direct in de browser</td>
+        </tr>
+        <tr>
+            <td>Lokale opslag</td>
+            <td>Minimaal — alleen de stamboomtitel wordt opgeslagen in <code>localStorage</code></td>
+        </tr>
+    </table>
+
+    <div class="callout warn">
+        <strong>⚠️ Offline gebruik</strong>
+        Als de CDN-bibliotheken (D3, Lodash, SweetAlert2) nog nooit zijn geladen, werkt de applicatie niet zonder internet. Voor volledig offline gebruik kunnen de bibliotheken lokaal worden opgeslagen en de CDN-links in het HTML-bestand worden aangepast.
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!--  FOOTER                                                    -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div class="doc-footer">
+    Stamboom Applicatie &nbsp;·&nbsp; Versie V1.0 &nbsp;·&nbsp; Documentatie opgesteld maart 2026
+</div>
+
+</div><!-- /wrapper -->
+</body>
+</html>
