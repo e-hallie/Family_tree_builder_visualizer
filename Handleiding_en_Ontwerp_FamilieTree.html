@@ -480,7 +480,8 @@
     </div>
 
     <h3>Infopaneel (linker zijkant)</h3>
-    <p>Verschijnt alleen in <em>View</em>-modus na een klik op een persoon. Toont alle beschikbare gegevens van die persoon: naam, geslacht, geboortedatum/-plaats, overlijdensdatum/-plaats, doopdatum, religie, beroep, bijzondere activiteiten en notities. Sluit via ✕ of door op een andere persoon te klikken.</p>
+    <p>Verschijnt alleen in <em>View</em>-modus na een klik op een persoon. Toont alle beschikbare gegevens van die persoon: naam, geslacht, geboortedatum/-plaats (met eventueel <em>circa</em>-aanduiding), overlijdensdatum/-plaats, doopdatum, religie, beroep, bijzondere activiteiten, notities, bronnen (met klikbare URLs) en validatiestatus.</p>
+    <p>Onderaan het infopaneel staat de knop <kbd class="orange">Familie naam lijn</kbd> — zie sectie 4.2 voor uitleg.</p>
 
     <h3>Validatiebadges</h3>
     <p>Op elke persoonskaart kan een kleine badge verschijnen die de datakwaliteit aangeeft:</p>
@@ -551,6 +552,40 @@
             <div class="step-body"><strong>Scrollwiel</strong> om in- of uit te zoomen.</div>
         </li>
     </ul>
+
+    <h3>Familie naam lijn</h3>
+    <p>Onderaan het infopaneel (na een klik op een persoon) staat de knop <kbd class="orange">Familie naam lijn</kbd>. Deze functie licht de volledige naamdragerslijn uit:</p>
+    <ul class="steps">
+        <li>
+            <span class="step-num">1</span>
+            <div class="step-body"><strong>Klik op een persoon</strong> zodat het infopaneel verschijnt.</div>
+        </li>
+        <li>
+            <span class="step-num">2</span>
+            <div class="step-body"><strong>Klik op <kbd class="orange">Familie naam lijn</kbd></strong> onderaan het infopaneel.</div>
+        </li>
+        <li>
+            <span class="step-num">3</span>
+            <div class="step-body">De <strong>patrilineaire lijn</strong> wordt oranje uitgelicht: omhoog via vaders (vader, grootvader, overgrootvader, …) en omlaag via zonen die de familienaam dragen. Dochters met dezelfde achternaam worden eveneens meegenomen.</div>
+        </li>
+        <li>
+            <span class="step-num">4</span>
+            <div class="step-body"><strong>Echtgenotes</strong> van mannen in de lijn worden iets lichter weergegeven (niet gedimd), zodat de gezinnen zichtbaar blijven.</div>
+        </li>
+        <li>
+            <span class="step-num">5</span>
+            <div class="step-body">De weergave <strong>zoomt automatisch in</strong> op de uitgelichte lijn.</div>
+        </li>
+        <li>
+            <span class="step-num">→</span>
+            <div class="step-body"><strong>Klik op de achtergrond</strong> om de markering te wissen en terug te keren naar het normale overzicht.</div>
+        </li>
+    </ul>
+
+    <div class="callout tip">
+        <strong>Wanneer gebruiken?</strong>
+        De Familie naam lijn is ideaal om snel te zien hoe een achternaam door de generaties is doorgegeven en waar de naamlijn eindigt (bijv. bij dochters die trouwden).
+    </div>
 
     <hr>
 
@@ -674,7 +709,7 @@
         <tr>
             <td><strong>Geboortedatum</strong> (Birth Date)</td>
             <td>Nee</td>
-            <td>Formaat: <code>dd/mm/yyyy</code> · <code>mm/yyyy</code> · <code>yyyy</code></td>
+            <td>Formaat: <code>dd/mm/yyyy</code> · <code>mm/yyyy</code> · <code>yyyy</code>. Met optionele <em>circa</em>-aanduiding (checkbox).</td>
         </tr>
         <tr>
             <td><strong>Geboorteplaats</strong> (Birth Location)</td>
@@ -684,7 +719,7 @@
         <tr>
             <td><strong>Overlijdensdatum</strong> (Death Date)</td>
             <td>Nee</td>
-            <td>Zelfde formaten als geboortedatum</td>
+            <td>Zelfde formaten als geboortedatum. Met optionele <em>circa</em>-aanduiding (checkbox).</td>
         </tr>
         <tr>
             <td><strong>Overlijdensplaats</strong> (Death Location)</td>
@@ -709,7 +744,12 @@
         <tr>
             <td><strong>Notities</strong> (Notes)</td>
             <td>Nee</td>
-            <td>Vrij tekstveld; bronverwijzingen, URLs, extra context</td>
+            <td>Vrij tekstveld voor extra context en opmerkingen</td>
+        </tr>
+        <tr>
+            <td><strong>Bronnen</strong> (Sources)</td>
+            <td>Nee</td>
+            <td>Eén bron per regel. URLs worden automatisch klikbaar gemaakt in het infopaneel. Wordt in GEDCOM opgeslagen als <code>SOUR</code>-tags.</td>
         </tr>
         <tr>
             <td><strong>Validatiestatus</strong></td>
@@ -723,7 +763,9 @@
         Alle datumvelden accepteren drie precisieniveaus:<br>
         • <strong>Volledig:</strong> <code>15/04/1850</code><br>
         • <strong>Maand + jaar:</strong> <code>04/1850</code><br>
-        • <strong>Alleen jaar:</strong> <code>1850</code>
+        • <strong>Alleen jaar:</strong> <code>1850</code><br><br>
+        <strong>📅 Circa (ongeveer)</strong><br>
+        Als een datum niet zeker is, vink dan het vakje <em>Circa</em> aan onder het datumveld. De datum wordt dan weergegeven met de prefix <strong>ca.</strong> (bijv. <em>ca. 1850</em>). In GEDCOM wordt dit opgeslagen als <code>ABT</code> (About).
     </div>
 </div>
 
@@ -803,6 +845,8 @@
         <tr><td><code>fatherId</code>, <code>motherId</code></td><td>Nummer / null</td><td>Verwijzingen naar ouder-records</td></tr>
         <tr><td><code>childIds</code></td><td>Array van nummers</td><td>Verwijzingen naar kind-records</td></tr>
         <tr><td><code>birthDate</code>, <code>birthLocation</code>, etc.</td><td>Tekst</td><td>Levensgebeurtenissen</td></tr>
+        <tr><td><code>birthDateCirca</code>, <code>deathDateCirca</code></td><td>Boolean</td><td>Geeft aan of de datum een schatting is (ca.)</td></tr>
+        <tr><td><code>sources</code></td><td>Tekst</td><td>Bronverwijzingen, één per regel, URLs worden klikbaar</td></tr>
         <tr><td><code>validationStatus</code></td><td>Tekst / null</td><td>verified · unverified · research · endOfLine</td></tr>
     </table>
 
