@@ -1,4 +1,4 @@
-# Family_tree_builder_visualizer
+# Locale Familie boom bewerker/visualisatie
 
 NL-
 De Stamboom Applicatie is een interactief, browsergebaseerd hulpmiddel voor het vastleggen, visualiseren en beheren van genealogische gegevens. De applicatie bestaat uit één enkel HTML-bestand en vereist geen installatie of internetverbinding nadat het bestand is geladen.
@@ -7,7 +7,7 @@ De boom wordt weergegeven als een hiërarchische grafiek — generaties naast el
 
 Het belangrijkste doel is om de informatie alleen lokaal op te kunnen gebruiken, op te slaan en te bewerken en niet afhankelijk zijn van (betaalde) applicaties die anderen in de cloud beheren en in de loop van tijd kunnen verdwijnen. 
 
-
+# Local familytree builder/visualizer
 EN-
 The Family Tree Application is an interactive, browser-based tool for recording, visualizing, and managing genealogical data. The application consists of a single HTML file and does not require any installation or internet connection after the file is loaded. 
 
