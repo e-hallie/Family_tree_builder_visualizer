@@ -5,7 +5,7 @@ De Stamboom Applicatie is een interactief, browsergebaseerd hulpmiddel voor het 
 
 De boom wordt weergegeven als een hiërarchische grafiek — generaties naast elkaar, met lijnen die ouder–kind relaties tonen en gestippelde rode verbindingen voor huwelijken/partnerschappen. Personen kunnen vrij worden toegevoegd, bewerkt en verwijderd via een formulier-interface.
 
-Het belangrijkste doel is om de informatie alleen lokaal op te kunnen gebruiken, op te slaan en te bewerken en niet afhankelijk zijn van (betaalde) applicaties die anderen in de cloud beheren en in de loop van tijd kunnen verdwijnen. 
+Het belangrijkste doel is om de informatie alleen lokaal te kunnen gebruiken, op te slaan en te bewerken en niet afhankelijk zijn van (veelal betaalde) applicaties die anderen in de cloud beheren en in de loop van tijd kunnen verdwijnen. 
 
 # Local familytree builder/visualizer
 EN-
@@ -13,4 +13,4 @@ The Family Tree Application is an interactive, browser-based tool for recording,
 
 The tree is represented as a hierarchical graph — generations side by side, with lines showing parent-child relationships and dotted red connections for marriages/partnerships. People can be freely added, edited, and removed through a form interface.
 
-The main goal is to only be able to use, store and process the information locally and not be dependent on (paid) applications that others manage in the cloud and can disappear over time.
+The main goal is to only be able to use, store and process the information locally and not be dependent on (mostly paid) applications that others manage in the cloud and can disappear over time.
